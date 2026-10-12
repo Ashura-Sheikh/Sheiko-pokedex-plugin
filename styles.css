@@ -1,0 +1,67 @@
+/* Sheiko Pokédex. Placeholder art only: coloured badges, no sprites. */
+
+.sheiko-pokedex-badge {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	font-weight: 700;
+	color: #fff;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+	background: linear-gradient(135deg, var(--sheiko-pokedex-c1) 50%, var(--sheiko-pokedex-c2) 50%);
+	border: 3px solid var(--background-modifier-border);
+	margin: 0 auto;
+}
+.sheiko-pokedex-badge-small { width: 44px; height: 44px; font-size: 18px; }
+.sheiko-pokedex-badge-large { width: 120px; height: 120px; font-size: 52px; margin-bottom: 8px; }
+.sheiko-pokedex-badge.is-unseen {
+	background: var(--background-modifier-border);
+	color: var(--text-faint);
+	text-shadow: none;
+}
+.sheiko-pokedex-badge.tier-rare { border-color: #4a8fdc; }
+.sheiko-pokedex-badge.tier-legendary { border-color: #e8b02a; box-shadow: 0 0 12px rgba(232, 176, 42, 0.6); }
+
+.sheiko-pokedex-types { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin: 4px 0; }
+.sheiko-pokedex-type {
+	font-size: var(--font-ui-smaller);
+	padding: 1px 6px;
+	border-radius: var(--radius-s);
+	color: #fff;
+	background: var(--sheiko-pokedex-type);
+}
+
+/* Reward window */
+.sheiko-pokedex-reward { text-align: center; }
+.sheiko-pokedex-reward h2 { margin: 4px 0; }
+.sheiko-pokedex-reward-task, .sheiko-pokedex-why { color: var(--text-muted); font-size: var(--font-ui-small); }
+.sheiko-pokedex-tier { font-weight: 600; margin: 2px 0; }
+.sheiko-pokedex-tier.tier-rare { color: #4a8fdc; }
+.sheiko-pokedex-tier.tier-legendary { color: #c8901a; }
+.sheiko-pokedex-dup { font-size: var(--font-ui-small); }
+
+/* Pokédex view */
+.sheiko-pokedex-view { padding: var(--size-4-4); }
+.sheiko-pokedex-stats { display: flex; flex-wrap: wrap; gap: var(--size-4-2); margin-bottom: var(--size-4-4); }
+.sheiko-pokedex-stat {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-2) var(--size-4-3);
+	min-width: 96px;
+}
+.sheiko-pokedex-stat-value { font-size: var(--font-ui-large); font-weight: 600; }
+.sheiko-pokedex-stat-label { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.sheiko-pokedex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: var(--size-4-2); }
+.sheiko-pokedex-cell {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-2);
+	text-align: center;
+	position: relative;
+}
+.sheiko-pokedex-cell.is-unseen { opacity: 0.55; }
+.sheiko-pokedex-num { font-size: var(--font-ui-smaller); color: var(--text-faint); margin-top: 4px; }
+.sheiko-pokedex-name { font-weight: 600; font-size: var(--font-ui-small); }
+.sheiko-pokedex-count { position: absolute; top: 4px; right: 6px; font-size: var(--font-ui-smaller); color: var(--text-muted); }
+
+.sheiko-pokedex-context-map { width: 100%; font-family: var(--font-monospace); }
