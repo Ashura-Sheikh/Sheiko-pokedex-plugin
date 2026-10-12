@@ -132,3 +132,20 @@
 .sheiko-pokedex-movelist li.is-next .sheiko-pokedex-move-name { color: var(--interactive-accent); font-weight: 600; }
 .sheiko-pokedex-movelist li.is-next .sheiko-pokedex-move-name::before { content: '→ '; }
 .sheiko-pokedex-movelist li.is-later { color: var(--text-faint); }
+
+/* Local sprites (S1): pixel art drawn crisp, on a neutral disc. Unseen = black silhouette. */
+.sheiko-pokedex-badge.has-sprite {
+	background: var(--background-secondary);
+	text-shadow: none;
+	overflow: hidden;
+}
+.sheiko-pokedex-sprite {
+	width: 100%;
+	height: 100%;
+	image-rendering: pixelated;
+	object-fit: contain;
+	pointer-events: none;
+	user-select: none;
+}
+.sheiko-pokedex-badge.has-sprite.is-unseen .sheiko-pokedex-sprite { filter: brightness(0); opacity: 0.55; }
+.sheiko-pokedex-badge-small.has-sprite { width: 56px; height: 56px; }

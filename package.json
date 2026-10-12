@@ -1,6 +1,6 @@
 {
 	"name": "sheiko-pokedex",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"private": true,
 	"description": "Catch a Gen 1 Pokémon each time a task closes. Works alongside TaskNotes and Sheiko Task Lifecycle.",
 	"main": "main.js",
@@ -11,7 +11,8 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint .",
 		"test": "tsc -p tsconfig.test.json && node test/run.mjs",
-		"data": "python3 -I scripts/build_gen1_data.py"
+		"data": "python3 -I scripts/build_gen1_data.py",
+		"sprites": "python3 -I scripts/fetch_sprites.py src/data/sprites.local.ts"
 	},
 	"keywords": [],
 	"license": "UNLICENSED",

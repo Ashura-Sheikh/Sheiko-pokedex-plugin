@@ -1,7 +1,14 @@
-// Placeholder art only (Sheikh's decision, 2026-10-12): a coloured badge with the
-// dex number and initial. No sprite images are bundled or fetched.
+// Badges: the local sprite when one exists (S1, Sheikh 2026-10-12: fetched by
+// `npm run sprites` into a git-ignored file, never committed), otherwise a coloured
+// placeholder badge with the initial. The repo and CI always use the placeholder.
 
 import { Species, Tier } from '../species';
+import { SPRITES } from 'sprites-data';
+
+/** The local sprite for a species, or null (no local sprite file: CI, fresh clones). */
+export function spriteFor(dex: number): string | null {
+	return SPRITES[dex] ?? null;
+}
 
 /** Our own palette, one colour per type. */
 const TYPE_COLOURS: Record<string, string> = {
@@ -43,6 +50,18 @@ export function titleCase(s: string): string {
 /** A badge for a caught species, or a grey silhouette for an unseen one. */
 export function renderBadge(parent: HTMLElement, species: Species, seen: boolean, size: 'small' | 'large'): HTMLElement {
 	const badge = parent.createDiv({ cls: `sheiko-pokedex-badge sheiko-pokedex-badge-${size}` });
+	const sprite = spriteFor(species.dex);
+	if (sprite) {
+		// Local sprite (S1): the art itself; unseen Pokémon show as a black silhouette.
+		badge.addClass('has-sprite');
+		const img = badge.createEl('img', { cls: 'sheiko-pokedex-sprite' });
+		img.src = sprite;
+		img.alt = seen ? species.name : 'Unknown Pokémon';
+		img.draggable = false;
+		if (seen) badge.addClass(`tier-${species.tier}`);
+		else badge.addClass('is-unseen');
+		return badge;
+	}
 	if (!seen) {
 		badge.addClass('is-unseen');
 		badge.setText('?');

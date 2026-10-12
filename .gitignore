@@ -30,3 +30,6 @@ test-dist/
 # This folder doubles as the Pokédex test vault: keep its notes out of git
 TaskNotes/
 Screenshots for this Vault/
+
+# Sprite art: fetched locally by `npm run sprites`, never committed (Sheikh chose S1, 2026-10-12)
+src/data/sprites.local.ts
