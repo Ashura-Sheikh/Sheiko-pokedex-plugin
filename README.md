@@ -75,9 +75,16 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
   - a duplicate catch adds +50
   - without a partner, no XP is earned, and the notice says so
 - **Levels:** every caught Pokémon starts at level 5 and keeps its own level and XP, so swapping partners loses nothing. Going from level L to L+1 takes 10 × L XP, up to level 100.
-- **Evolution by level:** when the partner reaches its evolution level, you're asked first, with **Evolve** or **Cancel**. Cancel and you're asked again at the next level.
+- **Evolution by level:** when the partner reaches its evolution level, the **Game Boy evolution scene** starts: "What? CHARMELEON is evolving!" on an original green screen. **Press B** (or **Stop**, or close the window) to stop it. Stop it and you're asked again at the next level.
   - The evolved form keeps the level and becomes the partner.
   - **Both forms stay caught** in the Pokédex.
+- **The evolution scene** follows Pokémon Red/Blue's own timing (from the pret/pokered disassembly):
+  - the Pokémon in colour, then black silhouettes of the old and new forms swapping in 8 bursts that get longer while the pauses get shorter (72 swaps, about 6 seconds)
+  - then "CHARMELEON evolved into CHARIZARD!", or "Huh? CHARMELEON stopped evolving!"
+  - B is read during the pauses, as in the game, so pressing or holding it stops the scene at the next pause
+  - stone evolutions play the same scene but can't be stopped, as in the game
+  - **Calm evolution scene** (a setting, and automatic when your system asks for reduced motion) replaces the flicker with a slow fade
+  - no sound
 - **Stones:** 1 in 25 catches (about one every 8 days at 3 catches a day) also finds a stone matching the caught Pokémon's type:
 
   | Caught type | Stone |
@@ -148,6 +155,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **0.7.0:** the Game Boy evolution scene: Red/Blue timing and text on an original green screen, B to stop, unstoppable stone evolutions, and a calm mode without flicker.
 - **0.6.1:** the partner is the main visual: a large card at the top of the Pokédex with a 2× sprite, level and XP, current moves, next move and what it evolves into, plus Details and Change partner.
 - **0.6.0:** optional local sprites (fetched by `npm run sprites`, never committed; silhouettes for unseen Pokémon). The README is written for a public audience.
 - **0.5.0:** bulk-close rule: more than 50 closes within 6 minutes → half credit for the rest of the burst.
