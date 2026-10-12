@@ -96,6 +96,27 @@ export function stoneEvolutions(dex: number, stones: Stones, all: readonly Speci
 	return out;
 }
 
+/**
+ * One line for the partner card about what comes next for this Pokémon:
+ * a level evolution (or that it's ready), stone/trade evolutions with stones held, or fully evolved.
+ */
+export function evolutionHint(dex: number, mon: Mon, stones: Stones, all: readonly Species[] = GEN1): string {
+	const parts: string[] = [];
+	for (const s of evolutionsOf(dex, all)) {
+		const e = s.evolution;
+		if (e?.trigger === 'level' && e.minLevel !== null) {
+			parts.push(
+				mon.level >= e.minLevel
+					? `Ready to evolve into ${s.name}`
+					: `Evolves into ${s.name} at Lv ${e.minLevel}`,
+			);
+		} else if (e?.stone) {
+			parts.push(`${STONE_LABELS[e.stone]} → ${s.name} (have ${stones[e.stone]})`);
+		}
+	}
+	return parts.length ? parts.join(' · ') : 'Fully evolved';
+}
+
 // ---------- Moves (Red/Blue level-up, Sheikh 2026-10-12) ----------
 
 export const MOVE_SLOTS = 4;

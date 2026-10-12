@@ -63,6 +63,7 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
 ## Partner, levels, evolution and stones
 
+- **Partner card:** the partner gets a large card at the top of the Pokédex view: a 2× sprite, level and XP bar, its current moves, its next move and what it evolves into (level, stone or fully evolved).
 - **Partner:** choose one caught Pokémon as your partner, from the Pokédex view (**Choose partner**, or click a Pokémon and pick **Make partner**) or with the **Choose partner** command.
 - **Status bar:** shows the partner and its level, e.g. "Charmeleon Lv 17".
   - **Hover:** shows XP, e.g. "140 / 170 XP", and whether an evolution is available.
@@ -147,6 +148,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **0.6.1:** the partner is the main visual: a large card at the top of the Pokédex with a 2× sprite, level and XP, current moves, next move and what it evolves into, plus Details and Change partner.
 - **0.6.0:** optional local sprites (fetched by `npm run sprites`, never committed; silhouettes for unseen Pokémon). The README is written for a public audience.
 - **0.5.0:** bulk-close rule: more than 50 closes within 6 minutes → half credit for the rest of the burst.
 - **0.4.0:** Red/Blue level-up moves (current 4 under each card, full list in the detail window, "Learned …!" on level-ups), plus status-bar hover, click and right-click.

@@ -48,7 +48,7 @@ export function titleCase(s: string): string {
 }
 
 /** A badge for a caught species, or a grey silhouette for an unseen one. */
-export function renderBadge(parent: HTMLElement, species: Species, seen: boolean, size: 'small' | 'large'): HTMLElement {
+export function renderBadge(parent: HTMLElement, species: Species, seen: boolean, size: 'small' | 'large' | 'hero'): HTMLElement {
 	const badge = parent.createDiv({ cls: `sheiko-pokedex-badge sheiko-pokedex-badge-${size}` });
 	const sprite = spriteFor(species.dex);
 	if (sprite) {
