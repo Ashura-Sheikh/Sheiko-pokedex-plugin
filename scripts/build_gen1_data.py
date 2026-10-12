@@ -6,7 +6,7 @@ Usage:
 <csv-dir> must contain these files from
 https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv :
     pokemon_species.csv, pokemon_species_names.csv, pokemon_types.csv,
-    types.csv, pokemon_evolution.csv
+    types.csv, pokemon_evolution.csv, items.csv
 
 Only names, types, capture rates and evolution links are kept. No images.
 Run it again and commit the output if the data ever needs refreshing.
@@ -21,6 +21,8 @@ GEN1_MAX = 151
 ENGLISH = 9
 # PokeAPI evolution_trigger ids
 TRIGGERS = {1: "level", 2: "trade", 3: "item"}
+# Gen 1 evolution items -> the plugin's stone kinds. Trade evolutions use a "trade" stone (Sheikh, 2026-10-12).
+STONES = {"fire-stone": "fire", "water-stone": "water", "thunder-stone": "thunder", "leaf-stone": "leaf", "moon-stone": "moon"}
 
 
 def rows(csv_dir, name):
@@ -51,6 +53,7 @@ def main():
         if int(r["local_language_id"]) == ENGLISH
     }
     type_names = {int(r["id"]): r["identifier"] for r in rows(csv_dir, "types")}
+    items = {int(r["id"]): r["identifier"] for r in rows(csv_dir, "items")}
     types = {}
     for r in rows(csv_dir, "pokemon_types"):
         pid = int(r["pokemon_id"])
@@ -59,10 +62,19 @@ def main():
     evolution = {}
     for r in rows(csv_dir, "pokemon_evolution"):
         sid = int(r["evolved_species_id"])
+        # The first row per species is the original Gen 1 method; later rows are regional forms.
         if sid <= GEN1_MAX and sid not in evolution:
             trig = TRIGGERS.get(int(r["evolution_trigger_id"]), "other")
             lvl = int(r["minimum_level"]) if r["minimum_level"] else None
-            evolution[sid] = {"trigger": trig, "minLevel": lvl}
+            entry = {"trigger": trig, "minLevel": lvl}
+            if trig == "item":
+                item = items.get(int(r["trigger_item_id"])) if r["trigger_item_id"] else None
+                if item not in STONES:
+                    sys.exit("unexpected evolution item for species %d: %s" % (sid, item))
+                entry["stone"] = STONES[item]
+            elif trig == "trade":
+                entry["stone"] = "trade"
+            evolution[sid] = entry
 
     out = []
     for s in sorted(species, key=lambda r: int(r["id"])):

@@ -109,8 +109,18 @@ test('a live open → done change is reported after the read delay, with its fie
 			closeReason: 'parked',
 			dateCreated: '2026-10-12',
 			completedDate: '2026-10-12T10:00:00+01:00',
+			workingMinutes: null,
 		},
 	]);
+});
+
+test("Sheiko's timeWorkingMinutes is passed on when present", async () => {
+	const { app, watcher, closes, change } = setup();
+	const f = app.add('T/W.md', { status: 'open' });
+	await watcher.start();
+	change(f, { status: 'done', timeWorkingMinutes: 95 });
+	await runTimers();
+	assert.equal(closes[0]?.workingMinutes, 95);
 });
 
 test('tasks already done at startup never pay out (rewards start from install)', async () => {

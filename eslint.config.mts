@@ -42,7 +42,7 @@ export default defineConfig(
 		rules: {
 			'obsidianmd/ui/sentence-case': [
 				'warn',
-				{ brands: [...DEFAULT_BRANDS, 'Sheiko', 'TaskNotes', 'Pokédex', 'Pokémon'], ignoreWords: ['closedBy'] },
+				{ brands: [...DEFAULT_BRANDS, 'Sheiko', 'TaskNotes', 'Pokédex', 'Pokémon'], ignoreWords: ['closedBy', 'XP'] },
 			],
 		},
 	},

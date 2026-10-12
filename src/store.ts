@@ -5,12 +5,38 @@
 // Rarity uses the average score of the closes since the last catch, plus a daily
 // boost for how many closes were counted today. At most 3 catches a day.
 
-import { ContextTypes, Draw, draw, drawTarget, isDateOnlyValue, score, withinSla } from './rarity';
+import {
+	ContextTypes,
+	Draw,
+	draw,
+	drawTarget,
+	hashString,
+	isDateOnlyValue,
+	parseDate,
+	score,
+	seededRandom,
+	withinSla,
+} from './rarity';
+import {
+	DUPLICATE_BONUS_XP,
+	Mon,
+	STONE_CHANCE,
+	Stones,
+	addXp,
+	newMon,
+	noStones,
+	speciesByDex,
+	stoneForTypes,
+	xpForClose,
+} from './progression';
+import { STONE_KINDS, StoneKind } from './species';
 
 export interface Settings {
 	/** Catches per day. Closes after the limit is reached earn nothing and never pay out later. */
 	dailyCap: number;
 	showRewardWindow: boolean;
+	/** Test-only commands (give XP, stones, add a Pokémon). Off by default; for the test vault. */
+	testTools: boolean;
 	/** "context: type, type" per line. Parsed by parseContextTypes. */
 	contextTypes: string;
 }
@@ -29,6 +55,7 @@ export const DEFAULT_CONTEXT_TYPES = [
 export const DEFAULT_SETTINGS: Settings = {
 	dailyCap: 3,
 	showRewardWindow: true,
+	testTools: false,
 	contextTypes: DEFAULT_CONTEXT_TYPES,
 };
 
@@ -59,7 +86,7 @@ export interface Progress {
 }
 
 export interface PokedexData {
-	version: 2;
+	version: 3;
 	installedAt: string;
 	settings: Settings;
 	/** One entry per task path that has ever been through a decision. Never counted twice. */
@@ -70,6 +97,11 @@ export interface PokedexData {
 	progress: Progress;
 	/** Counted closes and catches on `date` (local). Resets at midnight; progress does not. */
 	daily: { date: string; closes: number; catches: number };
+	/** Level and XP per caught species (Phase 3). Each keeps its own, so swapping partners loses nothing. */
+	mons: Record<string, Mon>;
+	/** Dex number of the partner that earns XP, or null until one is chosen. */
+	partner: number | null;
+	stones: Stones;
 }
 
 export function newProgress(installedAt: string, catches: number): Progress {
@@ -79,7 +111,7 @@ export function newProgress(installedAt: string, catches: number): Progress {
 export function freshData(now: Date): PokedexData {
 	const installedAt = now.toISOString();
 	return {
-		version: 2,
+		version: 3,
 		installedAt,
 		settings: { ...DEFAULT_SETTINGS },
 		ledger: {},
@@ -87,6 +119,9 @@ export function freshData(now: Date): PokedexData {
 		catches: 0,
 		progress: newProgress(installedAt, 0),
 		daily: { date: localDate(now), closes: 0, catches: 0 },
+		mons: {},
+		partner: null,
+		stones: noStones(),
 	};
 }
 
@@ -94,7 +129,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 	return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
-/** Fills in anything missing and migrates 0.1.0 data (version 1). */
+/** Fills in anything missing and migrates 0.1.0 (version 1) and 0.2.0 (version 2) data. */
 export function normalizeData(raw: unknown, now: Date): PokedexData {
 	const base = freshData(now);
 	if (!isRecord(raw)) return base;
@@ -110,7 +145,7 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 	const today = localDate(now);
 	let daily = base.daily;
 	if (d.date === today) {
-		if (raw.version === 2 && typeof d.closes === 'number' && typeof d.catches === 'number') {
+		if ((raw.version === 2 || raw.version === 3) && typeof d.closes === 'number' && typeof d.catches === 'number') {
 			daily = { date: today, closes: d.closes, catches: d.catches };
 		} else if (typeof d.count === 'number') {
 			// 0.1.0 counted one close = one catch.
@@ -118,7 +153,7 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 		}
 	}
 
-	if (raw.version !== 2) {
+	if (raw.version === 1 || raw.version === undefined) {
 		// 0.1.0 → 0.2.0: the limit is now catches per day, default 3 (Sheikh, 2026-10-12).
 		if (savedSettings.dailyCap === 10) settings.dailyCap = DEFAULT_SETTINGS.dailyCap;
 	}
@@ -134,7 +169,30 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 				}
 			: newProgress(installedAt, catches);
 
-	return { version: 2, installedAt, settings, ledger, caught, catches, progress, daily };
+	// Phase 3: every caught species gets a level; saved levels are kept.
+	const savedMons = isRecord(raw.mons) ? raw.mons : {};
+	const mons: Record<string, Mon> = {};
+	for (const key of Object.keys(caught)) {
+		const m = savedMons[key];
+		mons[key] =
+			isRecord(m) && typeof m.level === 'number' && typeof m.xp === 'number'
+				? {
+						level: m.level,
+						xp: m.xp,
+						...(typeof m.declinedAt === 'number' ? { declinedAt: m.declinedAt } : {}),
+					}
+				: newMon();
+	}
+	const partner = typeof raw.partner === 'number' && caught[String(raw.partner)] ? raw.partner : null;
+	const stones = noStones();
+	if (isRecord(raw.stones)) {
+		for (const k of STONE_KINDS) {
+			const v = raw.stones[k];
+			if (typeof v === 'number' && v > 0) stones[k] = Math.floor(v);
+		}
+	}
+
+	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones };
 }
 
 export function localDate(d: Date): string {
@@ -149,14 +207,45 @@ export interface CloseInput {
 	closeReason: string | null;
 	dateCreated: unknown;
 	completedDate: unknown;
+	/** Sheiko's timeWorkingMinutes when present. Otherwise task size is dateCreated → close. */
+	workingMinutes?: number | null;
+}
+
+/** XP the partner gained from this close, or null when no partner is chosen. */
+export interface XpGain {
+	dex: number;
+	gained: number;
+	fromLevel: number;
+	toLevel: number;
 }
 
 export type Decision =
 	| { kind: 'already' }
 	| { kind: 'excluded'; reason: string }
 	| { kind: 'capped'; cap: number }
-	| { kind: 'counted'; closes: number }
-	| { kind: 'caught'; draw: Draw; duplicate: boolean; count: number };
+	| { kind: 'counted'; closes: number; xp: XpGain | null }
+	| { kind: 'caught'; draw: Draw; duplicate: boolean; count: number; xp: XpGain | null; stone: StoneKind | null };
+
+/** Task size in minutes: Sheiko's working minutes if given, else created → close. Null if unknown. */
+export function sizeMinutes(input: CloseInput, now: Date): number | null {
+	if (typeof input.workingMinutes === 'number' && Number.isFinite(input.workingMinutes)) return input.workingMinutes;
+	const c = parseDate(input.dateCreated);
+	const closedRaw = closeMoment(input.completedDate, now);
+	const d = parseDate(closedRaw);
+	if (!c || !d) return null;
+	const m = (d.getTime() - c.getTime()) / 60000;
+	return m >= 0 ? m : null;
+}
+
+/** Adds XP to the partner in `data` (mutates the given copy). Returns null without a partner. */
+function givePartnerXp(next: PokedexData, amount: number): XpGain | null {
+	if (next.partner === null) return null;
+	const key = String(next.partner);
+	const mon = next.mons[key] ?? newMon();
+	const r = addXp(mon, amount);
+	next.mons = { ...next.mons, [key]: r.mon };
+	return { dex: next.partner, gained: Math.floor(amount), fromLevel: r.fromLevel, toLevel: r.toLevel };
+}
 
 /**
  * When the close was made. TaskNotes writes a date-only completedDate; if it's today's
@@ -186,6 +275,8 @@ export function decide(
 		caught: { ...data.caught },
 		progress: { ...data.progress, contexts: [...data.progress.contexts] },
 		daily: data.daily.date === today ? { ...data.daily } : { date: today, closes: 0, catches: 0 },
+		mons: { ...data.mons },
+		stones: { ...data.stones },
 	};
 
 	const reason = input.closeReason?.trim().toLowerCase() ?? '';
@@ -206,10 +297,12 @@ export function decide(
 	next.progress.scoreSum += score(input.priority, sla);
 	for (const c of input.contexts) if (!next.progress.contexts.includes(c)) next.progress.contexts.push(c);
 	next.daily.closes += 1;
+	const closeXp = xpForClose(sizeMinutes(input, now));
 
 	if (next.progress.closes < next.progress.target) {
 		next.ledger[input.path] = { at, outcome: 'counted' };
-		return { data: next, decision: { kind: 'counted', closes: next.progress.closes } };
+		const xp = givePartnerXp(next, closeXp);
+		return { data: next, decision: { kind: 'counted', closes: next.progress.closes, xp } };
 	}
 
 	// Target reached: catch.
@@ -229,13 +322,26 @@ export function decide(
 		? { ...prev, count: prev.count + 1, lastAt: at }
 		: { count: 1, firstAt: at, lastAt: at };
 	next.caught[key] = entry;
+	if (!next.mons[key]) next.mons[key] = newMon();
 	next.catches = data.catches + 1;
 	next.daily.catches += 1;
 	next.progress = newProgress(data.installedAt, next.catches);
 	next.ledger[input.path] = { at, outcome: 'caught', dex: d.species.dex };
+
+	// XP: the catching close counts like any other; a duplicate adds a bonus.
+	const xp = givePartnerXp(next, closeXp + (prev ? DUPLICATE_BONUS_XP : 0));
+
+	// 1 in 25 catches also finds a stone matching the caught Pokémon's type.
+	const rand = seededRandom(hashString(`${data.installedAt}|stone|${data.catches}`));
+	let stone: StoneKind | null = null;
+	if (rand() < STONE_CHANCE) {
+		stone = stoneForTypes(d.species.types, rand);
+		next.stones[stone] += 1;
+	}
+
 	return {
 		data: next,
-		decision: { kind: 'caught', draw: d, duplicate: !!prev, count: entry.count },
+		decision: { kind: 'caught', draw: d, duplicate: !!prev, count: entry.count, xp, stone },
 	};
 }
 
@@ -247,4 +353,85 @@ export function renamePath(data: PokedexData, oldPath: string, newPath: string):
 	delete ledger[oldPath];
 	ledger[newPath] = entry;
 	return { ...data, ledger };
+}
+
+// ---------- Test tools (only reachable when settings.testTools is on) ----------
+
+/** Gives the partner XP directly, as if earned from closes. Null without a partner. */
+export function testGivePartnerXp(data: PokedexData, amount: number): { data: PokedexData; xp: XpGain | null } {
+	const next: PokedexData = { ...data, mons: { ...data.mons } };
+	const xp = givePartnerXp(next, amount);
+	return xp ? { data: next, xp } : { data, xp: null };
+}
+
+export function testGiveEachStone(data: PokedexData): PokedexData {
+	const stones = { ...data.stones };
+	for (const k of STONE_KINDS) stones[k] += 1;
+	return { ...data, stones };
+}
+
+/** Adds a Pokémon to the Pokédex without a close (no ledger, progress or daily change). */
+export function testAddPokemon(data: PokedexData, dex: number, now: Date): PokedexData {
+	if (!speciesByDex(dex)) return data;
+	const key = String(dex);
+	const at = now.toISOString();
+	const prev = data.caught[key];
+	return {
+		...data,
+		caught: { ...data.caught, [key]: prev ? { ...prev, count: prev.count + 1, lastAt: at } : { count: 1, firstAt: at, lastAt: at } },
+		mons: { ...data.mons, [key]: data.mons[key] ?? newMon() },
+	};
+}
+
+// ---------- Phase 3 actions (from the UI) ----------
+
+export function setPartner(data: PokedexData, dex: number): PokedexData {
+	const key = String(dex);
+	if (!data.caught[key]) return data;
+	return { ...data, partner: dex, mons: { ...data.mons, [key]: data.mons[key] ?? newMon() } };
+}
+
+/** Cancelled evolution: asked again once the Pokémon is a level higher. */
+export function declineEvolution(data: PokedexData, dex: number): PokedexData {
+	const key = String(dex);
+	const mon = data.mons[key];
+	if (!mon) return data;
+	return { ...data, mons: { ...data.mons, [key]: { ...mon, declinedAt: mon.level } } };
+}
+
+/**
+ * Evolves `fromDex` into `toDex`. Both stay marked as caught (Sheikh, 2026-10-12).
+ * The evolved form takes the higher of the two levels; the partner follows the evolution.
+ * With `stone`, one stone of that kind is used; refused if none is held.
+ */
+export function evolve(
+	data: PokedexData,
+	fromDex: number,
+	toDex: number,
+	now: Date,
+	stone?: StoneKind,
+): PokedexData | null {
+	const fromKey = String(fromDex);
+	const toKey = String(toDex);
+	const from = data.mons[fromKey];
+	const target = speciesByDex(toDex);
+	if (!from || !data.caught[fromKey] || target?.evolvesFrom !== fromDex) return null;
+	if (stone && data.stones[stone] <= 0) return null;
+	const at = now.toISOString();
+	const prevTo = data.caught[toKey];
+	const existing = data.mons[toKey];
+	const carried: Mon = { level: from.level, xp: from.xp };
+	const toMon = existing && existing.level > from.level ? { ...existing } : carried;
+	delete toMon.declinedAt;
+	const fromMon: Mon = { level: from.level, xp: from.xp };
+	return {
+		...data,
+		caught: {
+			...data.caught,
+			[toKey]: prevTo ? { ...prevTo, count: prevTo.count + 1, lastAt: at } : { count: 1, firstAt: at, lastAt: at },
+		},
+		mons: { ...data.mons, [fromKey]: fromMon, [toKey]: toMon },
+		partner: data.partner === fromDex ? toDex : data.partner,
+		stones: stone ? { ...data.stones, [stone]: data.stones[stone] - 1 } : data.stones,
+	};
 }

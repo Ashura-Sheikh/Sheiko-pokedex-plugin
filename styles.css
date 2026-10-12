@@ -65,3 +65,48 @@
 .sheiko-pokedex-count { position: absolute; top: 4px; right: 6px; font-size: var(--font-ui-smaller); color: var(--text-muted); }
 
 .sheiko-pokedex-context-map { width: 100%; font-family: var(--font-monospace); }
+
+/* Phase 3: partner, XP, stones, evolution */
+.sheiko-pokedex-partner {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3);
+	border: 1px solid var(--interactive-accent);
+	border-radius: var(--radius-m);
+	padding: var(--size-4-2) var(--size-4-3);
+	margin-bottom: var(--size-4-3);
+}
+.sheiko-pokedex-partner .sheiko-pokedex-badge { margin: 0; flex: none; }
+.sheiko-pokedex-partner-info { flex: 1; min-width: 0; }
+.sheiko-pokedex-partner-name { font-weight: 600; }
+.sheiko-pokedex-partner-empty { flex: 1; color: var(--text-muted); }
+.sheiko-pokedex-xp { display: flex; align-items: center; gap: var(--size-4-2); }
+.sheiko-pokedex-xp-bar {
+	flex: 1;
+	height: 8px;
+	min-width: 80px;
+	border-radius: 4px;
+	background: var(--background-modifier-border);
+	overflow: hidden;
+}
+.sheiko-pokedex-xp-fill { height: 100%; background: var(--interactive-accent); }
+.sheiko-pokedex-xp-text { font-size: var(--font-ui-smaller); color: var(--text-muted); white-space: nowrap; }
+.sheiko-pokedex-level { margin: var(--size-4-2) auto; max-width: 280px; text-align: left; font-weight: 600; }
+.sheiko-pokedex-xp-line { font-weight: 600; }
+.sheiko-pokedex-stone-found { font-weight: 600; color: #c8901a; }
+.sheiko-pokedex-stones { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--size-4-3); }
+.sheiko-pokedex-stone {
+	font-size: var(--font-ui-smaller);
+	padding: 2px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+}
+.sheiko-pokedex-stone.is-empty { color: var(--text-faint); }
+.sheiko-pokedex-cell.is-caught { cursor: pointer; }
+.sheiko-pokedex-cell.is-caught:hover, .sheiko-pokedex-cell.is-caught:focus-visible { border-color: var(--interactive-accent); }
+.sheiko-pokedex-cell.is-partner { border: 2px solid var(--interactive-accent); }
+.sheiko-pokedex-cell-level { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.sheiko-pokedex-evolve-row { display: flex; align-items: center; justify-content: center; gap: var(--size-4-4); }
+.sheiko-pokedex-evolve-row .sheiko-pokedex-badge { margin: 0 0 8px; }
+.sheiko-pokedex-evolve-arrow { font-size: 32px; color: var(--text-muted); }
+.sheiko-pokedex-status { cursor: pointer; }

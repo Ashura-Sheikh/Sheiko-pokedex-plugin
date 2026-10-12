@@ -40,7 +40,44 @@ Needs **TaskNotes** and **Sheiko Task Lifecycle**, both enabled. Desktop only.
 7. **Species:** the `contexts` of every close in the batch narrow which types can appear. The mapping is editable in the plugin's settings. If no species in the drawn tier matches, any species in that tier can appear.
 8. **Draws are seeded,** so the logic is repeatable and testable. The hidden target is seeded from the install time and the catch number.
 
-Task size (worked time) doesn't affect rarity. It will scale XP once partner levels arrive.
+Task size (worked time) doesn't affect rarity. It scales your partner's XP (below).
+
+## Partner, levels, evolution and stones (0.3.0)
+
+- **Partner:** choose one caught Pokémon as your partner, from the Pokédex view (**Choose partner**, or click a Pokémon and pick **Make partner**) or with the **Choose partner** command.
+- **Status bar:** shows the partner and its level, e.g. "Charmeleon Lv 17".
+  - **Hover:** shows XP, e.g. "140 / 170 XP", and whether an evolution is available.
+  - **Click:** opens the Pokédex, or the partner picker if no partner is set yet.
+  - **Right-click:** a menu with Open Pokédex, Choose partner and, when the partner has reached its evolution level (including after a Cancel), **Evolve now**.
+- **XP:** every counted close gives the partner XP:
+  - 10, plus 1 per 30 minutes of task size, up to +40
+  - task size is Sheiko's `timeWorkingMinutes` when present, otherwise `dateCreated` → close
+  - a duplicate catch adds +50
+  - without a partner, no XP is earned, and the notice says so
+- **Levels:** every caught Pokémon starts at level 5 and keeps its own level and XP, so swapping partners loses nothing. Going from level L to L+1 takes 10 × L XP, up to level 100.
+- **Evolution by level:** when the partner reaches its evolution level, you're asked first, with **Evolve** or **Cancel**. Cancel and you're asked again at the next level.
+  - The evolved form keeps the level and becomes the partner.
+  - **Both forms stay caught** in the Pokédex.
+- **Stones:** 1 in 25 catches (about one every 8 days at 3 catches a day) also finds a stone matching the caught Pokémon's type:
+
+  | Caught type | Stone |
+  |---|---|
+  | Fire | Fire Stone |
+  | Water, Ice | Water Stone |
+  | Electric | Thunder Stone |
+  | Grass, Bug | Leaf Stone |
+  | Fairy, Normal, Poison | Moon Stone |
+  | Psychic, Fighting, Rock, Ground, Ghost | Trade Stone |
+  | anything else | a random one |
+
+  The primary type is checked first, then the second.
+- **Using a stone:** click the Pokémon in the Pokédex and choose the stone. The **Trade Stone** stands in for Gen 1's trade evolutions (Kadabra, Machoke, Graveler, Haunter). Eevee's form depends on the stone (Water, Thunder or Fire).
+- **Test tools (off by default):** Settings → **Test tools** adds three commands for the test vault:
+  - **Test: give partner 500 XP:** about 3 presses take a level-5 Charmander to 16
+  - **Test: give one of each stone**
+  - **Test: add a Pokémon to the Pokédex:** not counted as a close
+
+  Leave the setting off for real use.
 
 ## Data
 
@@ -59,7 +96,7 @@ python3 -I scripts/build_gen1_data.py <folder with the 5 CSV files>
 ```
 npm install
 npm run build   # type-check + bundle to main.js
-npm test        # 42 tests, Node's built-in runner, obsidian mocked
+npm test        # 66 tests, Node's built-in runner, obsidian mocked
 npm run lint
 ```
 
@@ -71,8 +108,9 @@ This repo folder doubles as the test vault. `.obsidian/` and `TaskNotes/` are gi
 
 **0.2.0:** a catch every 4–7 closes (hidden target), rarity from the batch average plus a daily boost, limit 3 catches a day, and date-only `completedDate` handled. Saved 0.1.0 data is migrated: catches are kept, and the old default limit of 10 becomes 3.
 
+**0.3.0 = Phase 3:** partner, per-Pokémon levels and XP, evolution prompts (asked first, re-asked a level later after Cancel), earned stones including the Trade Stone, and the partner in the status bar. Saved 0.2.0 data is migrated: every caught species starts at level 5, with no partner and no stones.
+
 Still to come:
-- **Phase 3:** XP, levels and evolution for a partner Pokémon you choose and can swap. Task size, from Sheiko's `timeWorkingMinutes` or else `dateCreated`→`completedDate`, scales XP. Duplicates give bonus XP.
 - **Phase 4:** polish.
 
 project-manager signs off after Phase 2, before the plugin is installed in the main vault.
