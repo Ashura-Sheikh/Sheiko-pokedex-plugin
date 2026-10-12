@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { GEN1 } from '../data/gen1';
 import { PokedexData, formatCount, localDate } from '../store';
 import { STONE_KINDS, TIERS } from '../species';
-import { START_LEVEL, STONE_LABELS, currentMoves, speciesByDex, xpToNext } from '../progression';
+import { START_LEVEL, STONE_LABELS, currentMoves, evolutionHint, nextMove, speciesByDex, xpToNext } from '../progression';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
 import { renderXpBar } from './detail-modal';
 
@@ -111,26 +111,52 @@ export class PokedexView extends ItemView {
 		}
 	}
 
+	/**
+	 * The partner is the main visual (Sheikh, 2026-10-12): a large card with a 2× sprite,
+	 * level and XP, current moves, the next move and what it evolves into.
+	 */
 	private renderPartner(parent: HTMLElement, data: PokedexData): void {
-		const panel = parent.createDiv({ cls: 'sheiko-pokedex-partner' });
 		const p = data.partner !== null ? speciesByDex(data.partner) : undefined;
+		const hasCaught = Object.keys(data.caught).length > 0;
+		const panel = parent.createDiv({ cls: `sheiko-pokedex-partner${p ? ' is-hero' : ''}` });
 		if (!p) {
 			panel.createDiv({
 				cls: 'sheiko-pokedex-partner-empty',
-				text: Object.keys(data.caught).length
+				text: hasCaught
 					? 'No partner yet. Choose one to start earning XP from your closes.'
 					: 'Catch your first Pokémon, then choose it as your partner to earn XP.',
 			});
-		} else {
-			const mon = data.mons[String(p.dex)] ?? { level: START_LEVEL, xp: 0 };
-			renderBadge(panel, p, true, 'small');
-			const info = panel.createDiv({ cls: 'sheiko-pokedex-partner-info' });
-			info.createDiv({ cls: 'sheiko-pokedex-partner-name', text: `Partner: ${p.name} · Lv ${mon.level}` });
-			renderXpBar(info, mon.xp, xpToNext(mon.level));
+			if (hasCaught) {
+				const b = panel.createEl('button', { cls: 'mod-cta', text: 'Choose partner' });
+				b.addEventListener('click', () => this.host.choosePartner());
+			}
+			return;
 		}
-		if (Object.keys(data.caught).length) {
-			const b = panel.createEl('button', { text: p ? 'Change partner' : 'Choose partner' });
-			b.addEventListener('click', () => this.host.choosePartner());
-		}
+
+		const mon = data.mons[String(p.dex)] ?? { level: START_LEVEL, xp: 0 };
+		const art = panel.createDiv({ cls: 'sheiko-pokedex-hero-art' });
+		renderBadge(art, p, true, 'hero');
+
+		const info = panel.createDiv({ cls: 'sheiko-pokedex-hero-info' });
+		info.createDiv({ cls: 'sheiko-pokedex-hero-label', text: 'Your partner' });
+		const title = info.createDiv({ cls: 'sheiko-pokedex-hero-title' });
+		title.createSpan({ cls: 'sheiko-pokedex-hero-name', text: p.name });
+		title.createSpan({ cls: 'sheiko-pokedex-hero-level', text: `Lv ${mon.level}` });
+		info.createDiv({ cls: `sheiko-pokedex-tier tier-${p.tier}`, text: `${dexLabel(p.dex)} · ${tierLabel(p.tier)}` });
+		renderTypes(info, p);
+		renderXpBar(info, mon.xp, xpToNext(mon.level));
+
+		const moves = info.createDiv({ cls: 'sheiko-pokedex-hero-moves' });
+		for (const m of currentMoves(p, mon.level)) moves.createSpan({ cls: 'sheiko-pokedex-hero-move', text: m.name });
+		const next = nextMove(p, mon.level);
+		const facts: string[] = [next ? `Next move: ${next.name} at Lv ${next.level}` : 'All moves learned'];
+		facts.push(evolutionHint(p.dex, mon, data.stones));
+		info.createDiv({ cls: 'sheiko-pokedex-hero-facts', text: facts.join(' · ') });
+
+		const buttons = info.createDiv({ cls: 'sheiko-pokedex-hero-buttons' });
+		const details = buttons.createEl('button', { text: 'Details' });
+		details.addEventListener('click', () => this.host.openDetail(p.dex));
+		const change = buttons.createEl('button', { text: 'Change partner' });
+		change.addEventListener('click', () => this.host.choosePartner());
 	}
 }

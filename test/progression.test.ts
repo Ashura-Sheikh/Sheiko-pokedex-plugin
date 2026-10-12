@@ -6,6 +6,7 @@ import {
 	STONE_CHANCE,
 	addXp,
 	evolutionsOf,
+	evolutionHint,
 	levelEvolutionAvailable,
 	newMon,
 	noStones,
@@ -326,4 +327,20 @@ test('"Evolve now" still offers an evolution after a Cancel; the automatic promp
 	assert.equal(levelEvolutionAvailable(4, mon)?.name, 'Charmeleon', 'manual Evolve now is available');
 	assert.equal(levelEvolutionAvailable(4, { level: 15, xp: 0 }), null, 'not before level 16');
 	assert.equal(levelEvolutionAvailable(133, { level: 99, xp: 0 }), null, 'stone-only Pokémon never');
+});
+
+// ---------- Partner card: evolution hint ----------
+
+test('evolution hint covers level, ready, stones, trade, fully evolved and legendary', () => {
+	const stones = { ...noStones(), thunder: 1, water: 2 };
+	assert.equal(evolutionHint(4, { level: 12, xp: 0 }, stones), 'Evolves into Charmeleon at Lv 16');
+	assert.equal(evolutionHint(4, { level: 18, xp: 0 }, stones), 'Ready to evolve into Charmeleon');
+	assert.equal(evolutionHint(25, newMon(), stones), 'Thunder Stone → Raichu (have 1)');
+	assert.equal(
+		evolutionHint(133, newMon(), stones),
+		'Water Stone → Vaporeon (have 2) · Thunder Stone → Jolteon (have 1) · Fire Stone → Flareon (have 0)',
+	);
+	assert.equal(evolutionHint(64, newMon(), noStones()), 'Trade Stone → Alakazam (have 0)');
+	assert.equal(evolutionHint(6, newMon(), stones), 'Fully evolved');
+	assert.equal(evolutionHint(145, newMon(), stones), 'Fully evolved', 'legendary');
 });
