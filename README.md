@@ -12,17 +12,33 @@ An Obsidian plugin that turns finishing tasks into catching Pokémon. Close task
 
 ## Install
 
-Not in the Obsidian community directory. To install by hand:
+Not in the Obsidian community directory. Install by hand, using one of these two routes.
+
+### Option 1: from a release (recommended, no tools needed)
+
+1. Open the [latest release](https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin/releases/latest) and download `main.js`, `manifest.json` and `styles.css`.
+2. Create the folder `<your vault>/.obsidian/plugins/sheiko-pokedex/` and put the 3 files in it.
+3. In Obsidian, go to **Settings → Community plugins**, refresh the list, and enable **Sheiko Pokédex**.
+
+Release builds show every Pokémon as a **coloured placeholder badge**. They never contain sprites; the release workflow fails if one ever would.
+
+### Option 2: build from source (needed for sprites)
+
+You need [Node.js](https://nodejs.org/) and Python 3.
 
 ```
+git clone https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin.git
+cd Sheiko-pokedex-plugin
 npm install
-npm run sprites   # optional: fetch sprites locally, see below
-npm run build
+npm run sprites   # optional: fetch the 151 sprites into a local, git-ignored file (needs internet)
+npm run build     # prints "Sprites: local file (sprites included)" if you fetched them
 ```
 
-Copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/plugins/sheiko-pokedex/`, then enable **Sheiko Pokédex** in Settings → Community plugins.
+Then copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/plugins/sheiko-pokedex/` and enable the plugin as in option 1. Builds that include sprites are for your own use only; don't share or redistribute them. See [Sprites](#sprites-optional-local-only).
 
-If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitignore`. That keeps your catch data, and the sprites inside `main.js` if you fetched them, out of your vault's history.
+### Either way
+
+If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitignore`. That keeps your catch data, and any sprites inside `main.js`, out of your vault's history.
 
 ## How a catch works
 
@@ -150,6 +166,8 @@ npm run lint
 ```
 
 **CI:** `.github/workflows/ci.yml` runs build, lint and test on Node 20, 22 and 24 for every pull request into `main` and every push to `main`.
+
+**Releases:** pushing a version tag (e.g. `0.7.1`) runs `.github/workflows/release.yml`. It checks the tag matches `manifest.json`, builds and tests, **fails if `main.js` contains any image data**, and creates a draft release with the 3 files. Build provenance is added once the repo is public.
 
 If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, `TaskNotes/` and screenshot folders are git-ignored.
 
