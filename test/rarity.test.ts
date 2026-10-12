@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {
 	TIER_ODDS,
 	candidates,
+	catchScore,
+	dailyBoost,
 	draw,
+	drawTarget,
 	hashString,
 	parseContextTypes,
 	parseDate,
@@ -69,7 +72,7 @@ test('seeded random is repeatable and different seeds differ', () => {
 });
 
 test('tier frequencies over 20,000 seeds track the odds table (within 1.5 points)', () => {
-	for (const s of [0, 5]) {
+	for (const s of [0, 5, 8]) {
 		const counts: Record<Tier, number> = { common: 0, uncommon: 0, rare: 0, legendary: 0 };
 		const n = 20000;
 		for (let i = 0; i < n; i++) counts[pickTier(seededRandom(hashString(`seed-${i}`)), s)]++;
@@ -98,19 +101,37 @@ test('candidates narrow by type and fall back to the whole tier when nothing mat
 	assert.equal(candidates('rare', new Set()).length, GEN1.filter((p) => p.tier === 'rare').length);
 });
 
-test('draw is deterministic per seed and respects the drawn tier', () => {
-	const input = {
-		seed: 'TaskNotes/Tasks/A.md|2026-10-01T09:00:00+01:00',
-		priority: 'high',
-		contexts: ['technical-delivery'],
-		created: '2026-10-01T09:00:00+01:00',
-		completed: '2026-10-01T15:00:00+01:00',
-	};
+test('draw is deterministic per seed, scores the batch average plus boost, and respects the tier', () => {
+	const input = { seed: 'x|catch|0|A.md', scoreSum: 17, closes: 5, closesToday: 10, contexts: ['technical-delivery'] };
 	const map = parseContextTypes('technical-delivery: electric');
 	const a = draw(input, map);
 	const b = draw(input, map);
 	assert.equal(a.species.dex, b.species.dex);
-	assert.equal(a.score, 5);
-	assert.equal(a.sla, true);
+	assert.equal(a.average, 3.4);
+	assert.equal(a.boost, 2);
+	assert.equal(a.score, 5, 'round(3.4) + 2');
+	assert.equal(a.closes, 5);
 	assert.equal(a.species.tier, a.tier);
+});
+
+test('daily boost: +1 per 5 closes today, capped at +3', () => {
+	assert.deepEqual([0, 4, 5, 9, 10, 15, 30, -1].map(dailyBoost), [0, 0, 1, 1, 2, 3, 3, 0]);
+});
+
+test('catch score rounds the batch average and adds the boost, 0..8', () => {
+	assert.equal(catchScore(0, 0, 0), 0);
+	assert.equal(catchScore(10, 4, 0), 3, 'round(2.5) = 3');
+	assert.equal(catchScore(35, 7, 15), 8, 'max');
+	assert.equal(TIER_ODDS.length, 9, 'odds cover scores 0..8');
+});
+
+test('hidden target is 4..7, repeatable per seed, and uses the whole range', () => {
+	const seen = new Set<number>();
+	for (let i = 0; i < 500; i++) {
+		const t = drawTarget(`install|${i}`);
+		assert.ok(t >= 4 && t <= 7, String(t));
+		assert.equal(t, drawTarget(`install|${i}`));
+		seen.add(t);
+	}
+	assert.deepEqual([...seen].sort(), [4, 5, 6, 7]);
 });

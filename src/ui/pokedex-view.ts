@@ -38,7 +38,9 @@ export class PokedexView extends ItemView {
 
 		const caughtDex = new Set(Object.keys(data.caught).map(Number));
 		const total = Object.values(data.caught).reduce((n, c) => n + c.count, 0);
-		const today = data.daily.date === localDate(new Date()) ? data.daily.count : 0;
+		const isToday = data.daily.date === localDate(new Date());
+		const catchesToday = isToday ? data.daily.catches : 0;
+		const closesToday = isToday ? data.daily.closes : 0;
 
 		const head = el.createDiv({ cls: 'sheiko-pokedex-head' });
 		head.createEl('h2', { text: 'Pokédex' });
@@ -50,7 +52,9 @@ export class PokedexView extends ItemView {
 		};
 		stat('Species caught', `${caughtDex.size} / ${GEN1.length}`);
 		stat('Total catches', String(total));
-		stat('Today', `${today} / ${data.settings.dailyCap}`);
+		stat('Catches today', `${catchesToday} / ${data.settings.dailyCap}`);
+		stat('Closes today', String(closesToday));
+		stat('Toward next catch', String(data.progress.closes));
 		for (const t of TIERS) {
 			const all = GEN1.filter((p) => p.tier === t);
 			stat(tierLabel(t), `${all.filter((p) => caughtDex.has(p.dex)).length} / ${all.length}`);

@@ -89,7 +89,11 @@ export default class SheikoPokedexPlugin extends Plugin {
 				new Notice(`Sheiko Pokédex: no catch, "${file.basename}" was closed as ${decision.reason}.`);
 				return;
 			case 'capped':
-				new Notice(`Sheiko Pokédex: daily limit of ${decision.cap} reached. No catch for "${file.basename}".`);
+				new Notice(`Sheiko Pokédex: today's limit of ${decision.cap} catches is reached. "${file.basename}" doesn't count.`);
+				return;
+			case 'counted':
+				// The target stays hidden (Sheikh, 2026-10-12): show progress, not the goal.
+				new Notice(`Sheiko Pokédex: close ${decision.closes} toward your next catch.`);
 				return;
 			case 'caught': {
 				const info: RewardInfo = { ...decision, taskName: file.basename };
@@ -162,7 +166,7 @@ class PokedexSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Daily catch limit')
-			.setDesc('Closes past this many in one day earn nothing, and never pay out later.')
+			.setDesc('Catches per day. Once reached, further closes that day earn nothing and never count later.')
 			.addText((t) =>
 				t.setValue(String(s.dailyCap)).onChange(async (v) => {
 					const n = Number(v);

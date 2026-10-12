@@ -20,6 +20,10 @@ export function slaTargetDays(priority: string | null): number {
 	}
 }
 
+export function isDateOnlyValue(value: unknown): boolean {
+	return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+}
+
 /** Date-only values read as local midnight, the same way Bases' date() does. */
 export function parseDate(value: unknown): Date | null {
 	if (typeof value !== 'string' || value.trim() === '') return null;
@@ -54,12 +58,25 @@ export function priorityPoints(priority: string | null): number {
 	}
 }
 
-/** 0..5. Task size is deliberately not here: Sheikh chose size → XP only (2026-10-12). */
+/** One close's score, 0..5. Task size is deliberately not here: Sheikh chose size → XP only (2026-10-12). */
 export function score(priority: string | null, sla: boolean | null): number {
 	return priorityPoints(priority) + (sla === true ? 2 : 0);
 }
 
-/** Percent odds per tier [common, uncommon, rare, legendary], indexed by score. Each row sums to 100. */
+/** Daily boost: +1 for every 5 closes counted today, up to +3 (Sheikh, 2026-10-12). */
+export const BOOST_PER_CLOSES = 5;
+export const MAX_BOOST = 3;
+export function dailyBoost(closesToday: number): number {
+	return Math.min(MAX_BOOST, Math.floor(Math.max(0, closesToday) / BOOST_PER_CLOSES));
+}
+
+/** Catch score = rounded average of the batch's close scores + today's boost, 0..8. */
+export function catchScore(scoreSum: number, closes: number, closesToday: number): number {
+	const avg = closes > 0 ? scoreSum / closes : 0;
+	return Math.round(avg) + dailyBoost(closesToday);
+}
+
+/** Percent odds per tier [common, uncommon, rare, legendary], indexed by catch score 0..8. Each row sums to 100. */
 export const TIER_ODDS: readonly (readonly [number, number, number, number])[] = [
 	[70, 25, 5, 0],
 	[62, 28, 9, 1],
@@ -67,7 +84,18 @@ export const TIER_ODDS: readonly (readonly [number, number, number, number])[] =
 	[42, 35, 20, 3],
 	[32, 37, 26, 5],
 	[22, 38, 32, 8],
+	[16, 37, 37, 10],
+	[12, 35, 41, 12],
+	[8, 32, 45, 15],
 ];
+
+/** Closes needed per catch: a hidden target drawn from 4..7 (Sheikh, 2026-10-12). */
+export const TARGET_MIN = 4;
+export const TARGET_MAX = 7;
+export function drawTarget(seed: string): number {
+	const r = seededRandom(hashString(`target|${seed}`))();
+	return TARGET_MIN + Math.floor(r * (TARGET_MAX - TARGET_MIN + 1));
+}
 
 export function oddsFor(s: number): readonly [number, number, number, number] {
 	const i = Math.max(0, Math.min(TIER_ODDS.length - 1, Math.floor(s)));
@@ -146,24 +174,34 @@ export function candidates(tier: Tier, pool: Set<string>, all: readonly Species[
 export interface Draw {
 	species: Species;
 	tier: Tier;
+	/** Catch score used for the odds, 0..8. */
 	score: number;
-	sla: boolean | null;
+	/** Average close score of the batch, before rounding. */
+	average: number;
+	boost: number;
+	closes: number;
 }
 
 export interface DrawInput {
 	seed: string;
-	priority: string | null;
+	scoreSum: number;
+	closes: number;
+	closesToday: number;
 	contexts: string[];
-	created: unknown;
-	completed: unknown;
 }
 
 export function draw(input: DrawInput, map: ContextTypes, all: readonly Species[] = GEN1): Draw {
-	const sla = withinSla(input.priority, input.created, input.completed);
-	const s = score(input.priority, sla);
+	const s = catchScore(input.scoreSum, input.closes, input.closesToday);
 	const rand = seededRandom(hashString(input.seed));
 	const tier = pickTier(rand, s);
 	const list = candidates(tier, typePool(input.contexts, map), all);
 	const species = list[Math.floor(rand() * list.length)]!;
-	return { species, tier, score: s, sla };
+	return {
+		species,
+		tier,
+		score: s,
+		average: input.closes > 0 ? input.scoreSum / input.closes : 0,
+		boost: dailyBoost(input.closesToday),
+		closes: input.closes,
+	};
 }
