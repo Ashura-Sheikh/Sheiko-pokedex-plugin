@@ -18,6 +18,7 @@ Needs **TaskNotes** and **Sheiko Task Lifecycle**, both enabled. Desktop only.
    - The target is a hidden number from 4 to 7, drawn again after every catch.
    - You see "close N toward your next catch". The target itself is never shown.
    - Progress is kept overnight.
+   - **Bulk closes (0.5.0):** when more than 50 tasks close within 6 minutes, the closes after the 50th count as **half a close**, toward both the hidden target and the daily boost, and weigh half in the batch average. XP isn't affected. Every close counts toward detecting a burst, including superseded, parked and over-the-limit ones. Both numbers are settings.
 5. **Each close gets a score:** priority points (high 3, medium 2, normal 1, other 0) + 2 if it closed within SLA.
    - **SLA targets** match the vault's `sla-tracking.base`: high 1 day, medium 2, normal 3, other 7, measured from `dateCreated` to `completedDate`.
    - If `completedDate` has a date but no time and it's today's date (TaskNotes' default when Sheiko isn't writing), the moment the close was seen is used instead.
@@ -101,7 +102,7 @@ python3 -I scripts/build_gen1_data.py <folder with the 5 CSV files>
 ```
 npm install
 npm run build   # type-check + bundle to main.js
-npm test        # 72 tests, Node's built-in runner, obsidian mocked
+npm test        # 83 tests, Node's built-in runner, obsidian mocked
 npm run lint
 ```
 
@@ -118,6 +119,8 @@ This repo folder doubles as the test vault. `.obsidian/` and `TaskNotes/` are gi
 **0.3.0 = Phase 3:** partner, per-Pokémon levels and XP, evolution prompts (asked first, re-asked a level later after Cancel), earned stones including the Trade Stone, and the partner in the status bar. Saved 0.2.0 data is migrated: every caught species starts at level 5, with no partner and no stones.
 
 **0.4.0:** Red/Blue level-up moves (current 4 under each card, full list in the detail window, "Learned …!" on level-ups), plus status-bar hover/click/right-click.
+
+**0.5.0:** bulk-close rule: more than 50 closes within 6 minutes → half credit for the rest of the burst.
 
 Still to come:
 - **Phase 4:** polish.

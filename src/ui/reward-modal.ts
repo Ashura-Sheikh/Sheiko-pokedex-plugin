@@ -1,6 +1,6 @@
 import { App, Modal } from 'obsidian';
 import { Draw } from '../rarity';
-import { XpGain } from '../store';
+import { XpGain, formatCount } from '../store';
 import { STONE_LABELS, learnedText, speciesByDex } from '../progression';
 import { StoneKind } from '../species';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
@@ -37,7 +37,7 @@ export class RewardModal extends Modal {
 		});
 		renderTypes(contentEl, s);
 		const avg = Math.round(draw.average * 10) / 10;
-		const why = [`${draw.closes} closes, average ${avg}`];
+		const why = [`${formatCount(draw.closes)} closes, average ${avg}`];
 		if (draw.boost > 0) why.push(`daily boost +${draw.boost}`);
 		why.push(`score ${draw.score}/8`);
 		contentEl.createEl('p', { cls: 'sheiko-pokedex-why', text: why.join(' · ') });
