@@ -338,7 +338,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 25,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "thunder"
 		}
 	},
 	{
@@ -401,7 +402,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 30,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "moon"
 		}
 	},
 	{
@@ -440,7 +442,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 33,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "moon"
 		}
 	},
 	{
@@ -464,7 +467,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 35,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "moon"
 		}
 	},
 	{
@@ -488,7 +492,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 37,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "fire"
 		}
 	},
 	{
@@ -514,7 +519,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 39,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "moon"
 		}
 	},
 	{
@@ -581,7 +587,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 44,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "leaf"
 		}
 	},
 	{
@@ -753,7 +760,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 58,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "fire"
 		}
 	},
 	{
@@ -792,7 +800,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 61,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "water"
 		}
 	},
 	{
@@ -830,7 +839,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 64,
 		"evolution": {
 			"trigger": "trade",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "trade"
 		}
 	},
 	{
@@ -868,7 +878,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 67,
 		"evolution": {
 			"trigger": "trade",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "trade"
 		}
 	},
 	{
@@ -909,7 +920,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 70,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "leaf"
 		}
 	},
 	{
@@ -976,7 +988,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 75,
 		"evolution": {
 			"trigger": "trade",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "trade"
 		}
 	},
 	{
@@ -1163,7 +1176,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 90,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "water"
 		}
 	},
 	{
@@ -1204,7 +1218,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 93,
 		"evolution": {
 			"trigger": "trade",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "trade"
 		}
 	},
 	{
@@ -1313,7 +1328,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 102,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "leaf"
 		}
 	},
 	{
@@ -1520,7 +1536,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 120,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "water"
 		}
 	},
 	{
@@ -1663,7 +1680,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 133,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "water"
 		}
 	},
 	{
@@ -1677,7 +1695,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 133,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "thunder"
 		}
 	},
 	{
@@ -1691,7 +1710,8 @@ export const GEN1: readonly Species[] = [
 		"evolvesFrom": 133,
 		"evolution": {
 			"trigger": "item",
-			"minLevel": null
+			"minLevel": null,
+			"stone": "fire"
 		}
 	},
 	{

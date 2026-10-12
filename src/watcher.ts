@@ -126,6 +126,8 @@ export class Watcher {
 				closeReason: text(fm.closeReason),
 				dateCreated: fm[cfg.field.dateCreated],
 				completedDate: fm[cfg.field.completedDate],
+				// Sheiko's field (tracker.ts FIELD.working); only present when Sheiko wrote the closure.
+				workingMinutes: typeof fm.timeWorkingMinutes === 'number' ? fm.timeWorkingMinutes : null,
 			},
 			file,
 		);

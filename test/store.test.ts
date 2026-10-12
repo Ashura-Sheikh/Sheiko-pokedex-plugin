@@ -57,7 +57,7 @@ test('a catch comes exactly when the hidden target (4..7) is reached', () => {
 
 test('counted closes report progress only, never the target', () => {
 	const r = decide(close('A.md'), freshData(NOW), MAP, NOW);
-	assert.deepEqual(r.decision, { kind: 'counted', closes: 1 });
+	assert.deepEqual(r.decision, { kind: 'counted', closes: 1, xp: null }, 'no partner yet, so no XP');
 });
 
 test('rarity uses the batch average: one high close among normals does not set it alone', () => {
@@ -97,7 +97,7 @@ test('progress is kept overnight; the daily counts reset', () => {
 	data = decide(close('2.md'), data, MAP, NOW).data;
 	const tomorrow = new Date('2026-10-13T09:00:00+01:00');
 	const r = decide(close('3.md'), data, MAP, tomorrow);
-	assert.deepEqual(r.decision, { kind: 'counted', closes: 3 });
+	assert.deepEqual(r.decision, { kind: 'counted', closes: 3, xp: null });
 	assert.equal(r.data.daily.date, '2026-10-13');
 	assert.equal(r.data.daily.closes, 1);
 	assert.equal(r.data.daily.catches, 0);
@@ -181,7 +181,7 @@ test('renames move the ledger entry, so a renamed task still cannot count twice'
 
 test('normalizeData: fresh install defaults', () => {
 	const fresh = normalizeData(undefined, NOW);
-	assert.equal(fresh.version, 2);
+	assert.equal(fresh.version, 3);
 	assert.equal(fresh.settings.dailyCap, 3);
 	assert.equal(fresh.daily.date, localDate(NOW));
 	assert.equal(fresh.catches, 0);
@@ -198,7 +198,7 @@ test('normalizeData migrates 0.1.0 data: keeps catches, limit 10 → 3, today\'s
 		daily: { date: '2026-10-12', count: 1 },
 	};
 	const m = normalizeData(v1, NOW);
-	assert.equal(m.version, 2);
+	assert.equal(m.version, 3);
 	assert.equal(m.settings.dailyCap, 3);
 	assert.equal(m.settings.contextTypes, 'legal: psychic', 'other settings kept');
 	assert.equal(m.caught['145']?.count, 1);

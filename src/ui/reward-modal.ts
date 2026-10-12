@@ -1,5 +1,8 @@
 import { App, Modal } from 'obsidian';
 import { Draw } from '../rarity';
+import { XpGain } from '../store';
+import { STONE_LABELS, speciesByDex } from '../progression';
+import { StoneKind } from '../species';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
 
 export interface RewardInfo {
@@ -7,6 +10,8 @@ export interface RewardInfo {
 	duplicate: boolean;
 	count: number;
 	taskName: string;
+	xp: XpGain | null;
+	stone: StoneKind | null;
 }
 
 export class RewardModal extends Modal {
@@ -20,7 +25,7 @@ export class RewardModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
-		const { draw, duplicate, count, taskName } = this.info;
+		const { draw, duplicate, count, taskName, xp, stone } = this.info;
 		const s = draw.species;
 		contentEl.addClass('sheiko-pokedex-reward');
 		contentEl.createEl('p', { cls: 'sheiko-pokedex-reward-task', text: `Closed: ${taskName}` });
@@ -39,8 +44,18 @@ export class RewardModal extends Modal {
 		if (duplicate) {
 			contentEl.createEl('p', {
 				cls: 'sheiko-pokedex-dup',
-				text: `Already caught: you now have ${count}. Duplicates will give bonus XP once partner levels arrive.`,
+				text: xp ? `Already caught: you now have ${count}. Bonus XP for your partner.` : `Already caught: you now have ${count}.`,
 			});
+		}
+		if (xp) {
+			const name = speciesByDex(xp.dex)?.name ?? 'Your partner';
+			const up = xp.toLevel > xp.fromLevel ? ` · grew to Lv ${xp.toLevel}!` : '';
+			contentEl.createEl('p', { cls: 'sheiko-pokedex-xp-line', text: `${name} +${xp.gained} XP${up}` });
+		} else {
+			contentEl.createEl('p', { cls: 'sheiko-pokedex-why', text: 'Choose a partner in the Pokédex to earn XP from your closes.' });
+		}
+		if (stone) {
+			contentEl.createEl('p', { cls: 'sheiko-pokedex-stone-found', text: `You found a ${STONE_LABELS[stone]}!` });
 		}
 		const buttons = contentEl.createDiv({ cls: 'modal-button-container' });
 		buttons.createEl('button', { text: 'Open Pokédex' }).addEventListener('click', () => {
