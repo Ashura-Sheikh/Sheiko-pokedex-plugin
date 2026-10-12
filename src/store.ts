@@ -39,6 +39,9 @@ export interface Settings {
 	testTools: boolean;
 	/** "context: type, type" per line. Parsed by parseContextTypes. */
 	contextTypes: string;
+	/** Bulk closes (Sheikh, 2026-10-12): closes beyond this many within the window get half credit. */
+	bulkThreshold: number;
+	bulkWindowMinutes: number;
 }
 
 export const DEFAULT_CONTEXT_TYPES = [
@@ -57,7 +60,12 @@ export const DEFAULT_SETTINGS: Settings = {
 	showRewardWindow: true,
 	testTools: false,
 	contextTypes: DEFAULT_CONTEXT_TYPES,
+	bulkThreshold: 50,
+	bulkWindowMinutes: 6,
 };
+
+/** Credit a bulk close gets toward the next catch and the daily boost (option C, Sheikh 2026-10-12). */
+export const BULK_CREDIT = 0.5;
 
 /** No reward and no progress for these, matching the SLA view's exclusion. */
 export const EXCLUDED_CLOSE_REASONS = ['superseded', 'parked'];
@@ -102,6 +110,8 @@ export interface PokedexData {
 	/** Dex number of the partner that earns XP, or null until one is chosen. */
 	partner: number | null;
 	stones: Stones;
+	/** When recent closes were seen (ISO), kept only as long as the bulk window. */
+	recentCloses: string[];
 }
 
 export function newProgress(installedAt: string, catches: number): Progress {
@@ -122,6 +132,7 @@ export function freshData(now: Date): PokedexData {
 		mons: {},
 		partner: null,
 		stones: noStones(),
+		recentCloses: [],
 	};
 }
 
@@ -192,7 +203,14 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 		}
 	}
 
-	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones };
+	const recentCloses = Array.isArray(raw.recentCloses) ? raw.recentCloses.filter((t): t is string => typeof t === 'string') : [];
+
+	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones, recentCloses };
+}
+
+/** Close counts can be halves since bulk closes get half credit: 3, 3.5. */
+export function formatCount(n: number): string {
+	return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
 export function localDate(d: Date): string {
@@ -223,8 +241,26 @@ export type Decision =
 	| { kind: 'already' }
 	| { kind: 'excluded'; reason: string }
 	| { kind: 'capped'; cap: number }
-	| { kind: 'counted'; closes: number; xp: XpGain | null }
-	| { kind: 'caught'; draw: Draw; duplicate: boolean; count: number; xp: XpGain | null; stone: StoneKind | null };
+	| { kind: 'counted'; closes: number; xp: XpGain | null; bulk: boolean }
+	| { kind: 'caught'; draw: Draw; duplicate: boolean; count: number; xp: XpGain | null; stone: StoneKind | null; bulk: boolean };
+
+/**
+ * Records this close's time and says whether it's a bulk close: more than `threshold`
+ * closes (this one included) within the last `windowMinutes`. Every close the plugin
+ * sees counts toward this, including excluded and capped ones, since it measures how
+ * fast tasks are being closed. Mutates `next.recentCloses`.
+ */
+export function noteClose(next: PokedexData, now: Date): boolean {
+	const windowMs = Math.max(0, next.settings.bulkWindowMinutes) * 60_000;
+	const cutoff = now.getTime() - windowMs;
+	const recent = next.recentCloses.filter((t) => {
+		const ms = Date.parse(t);
+		return Number.isFinite(ms) && ms > cutoff && ms <= now.getTime();
+	});
+	recent.push(now.toISOString());
+	next.recentCloses = recent;
+	return recent.length > Math.max(0, Math.floor(next.settings.bulkThreshold));
+}
 
 /** Task size in minutes: Sheiko's working minutes if given, else created → close. Null if unknown. */
 export function sizeMinutes(input: CloseInput, now: Date): number | null {
@@ -277,7 +313,9 @@ export function decide(
 		daily: data.daily.date === today ? { ...data.daily } : { date: today, closes: 0, catches: 0 },
 		mons: { ...data.mons },
 		stones: { ...data.stones },
+		recentCloses: [...data.recentCloses],
 	};
+	const bulk = noteClose(next, now);
 
 	const reason = input.closeReason?.trim().toLowerCase() ?? '';
 	if (EXCLUDED_CLOSE_REASONS.includes(reason)) {
@@ -291,18 +329,20 @@ export function decide(
 		return { data: next, decision: { kind: 'capped', cap } };
 	}
 
-	// Count the close toward the batch.
+	// Count the close toward the batch. A bulk close counts as half a close toward the
+	// hidden target and the daily boost; it also weighs half in the batch average. XP is not affected.
+	const credit = bulk ? BULK_CREDIT : 1;
 	const sla = withinSla(input.priority, input.dateCreated, closeMoment(input.completedDate, now));
-	next.progress.closes += 1;
-	next.progress.scoreSum += score(input.priority, sla);
+	next.progress.closes += credit;
+	next.progress.scoreSum += score(input.priority, sla) * credit;
 	for (const c of input.contexts) if (!next.progress.contexts.includes(c)) next.progress.contexts.push(c);
-	next.daily.closes += 1;
+	next.daily.closes += credit;
 	const closeXp = xpForClose(sizeMinutes(input, now));
 
 	if (next.progress.closes < next.progress.target) {
 		next.ledger[input.path] = { at, outcome: 'counted' };
 		const xp = givePartnerXp(next, closeXp);
-		return { data: next, decision: { kind: 'counted', closes: next.progress.closes, xp } };
+		return { data: next, decision: { kind: 'counted', closes: next.progress.closes, xp, bulk } };
 	}
 
 	// Target reached: catch.
@@ -341,7 +381,7 @@ export function decide(
 
 	return {
 		data: next,
-		decision: { kind: 'caught', draw: d, duplicate: !!prev, count: entry.count, xp, stone },
+		decision: { kind: 'caught', draw: d, duplicate: !!prev, count: entry.count, xp, stone, bulk },
 	};
 }
 

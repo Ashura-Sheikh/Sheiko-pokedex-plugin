@@ -1,6 +1,6 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { GEN1 } from '../data/gen1';
-import { PokedexData, localDate } from '../store';
+import { PokedexData, formatCount, localDate } from '../store';
 import { STONE_KINDS, TIERS } from '../species';
 import { START_LEVEL, STONE_LABELS, currentMoves, speciesByDex, xpToNext } from '../progression';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
@@ -64,8 +64,8 @@ export class PokedexView extends ItemView {
 		stat('Species caught', `${caughtDex.size} / ${GEN1.length}`);
 		stat('Total catches', String(total));
 		stat('Catches today', `${catchesToday} / ${data.settings.dailyCap}`);
-		stat('Closes today', String(closesToday));
-		stat('Toward next catch', String(data.progress.closes));
+		stat('Closes today', formatCount(closesToday));
+		stat('Toward next catch', formatCount(data.progress.closes));
 		for (const t of TIERS) {
 			const all = GEN1.filter((p) => p.tier === t);
 			stat(tierLabel(t), `${all.filter((p) => caughtDex.has(p.dex)).length} / ${all.length}`);

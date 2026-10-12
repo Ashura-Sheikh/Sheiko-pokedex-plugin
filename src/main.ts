@@ -8,6 +8,7 @@ import {
 	declineEvolution,
 	decide,
 	evolve,
+	formatCount,
 	normalizeData,
 	renamePath,
 	setPartner,
@@ -149,7 +150,10 @@ export default class SheikoPokedexPlugin extends Plugin {
 				return;
 			case 'counted':
 				// The target stays hidden (Sheikh, 2026-10-12): show progress, not the goal.
-				new Notice(`Sheiko Pokédex: close ${decision.closes} toward your next catch${this.xpText(decision.xp)}`);
+				new Notice(
+					`Sheiko Pokédex: close ${formatCount(decision.closes)} toward your next catch` +
+						`${decision.bulk ? ' (bulk close: half credit)' : ''}${this.xpText(decision.xp)}`,
+				);
 				this.maybeAskToEvolve(decision.xp);
 				return;
 			case 'caught': {
@@ -436,6 +440,34 @@ class PokedexSettingTab extends PluginSettingTab {
 				t.setValue(s.showRewardWindow).onChange(async (v) => {
 					s.showRewardWindow = v;
 					await this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName('Bulk closes')
+			.setDesc(
+				'Closes beyond this many within the window below count as half a close toward your next catch and the daily boost. This does not change XP.',
+			)
+			.addText((t) =>
+				t.setValue(String(s.bulkThreshold)).onChange(async (v) => {
+					const n = Number(v);
+					if (Number.isFinite(n) && n >= 1) {
+						s.bulkThreshold = Math.floor(n);
+						await this.plugin.saveSettings();
+					}
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName('Bulk window (minutes)')
+			.setDesc('How far back closes are counted for the bulk rule.')
+			.addText((t) =>
+				t.setValue(String(s.bulkWindowMinutes)).onChange(async (v) => {
+					const n = Number(v);
+					if (Number.isFinite(n) && n > 0) {
+						s.bulkWindowMinutes = n;
+						await this.plugin.saveSettings();
+					}
 				}),
 			);
 
