@@ -155,6 +155,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **0.7.1:** licensed under MIT (code only; see Credits and licence).
 - **0.7.0:** the Game Boy evolution scene: Red/Blue timing and text on an original green screen, B to stop, unstoppable stone evolutions, and a calm mode without flicker.
 - **0.6.1:** the partner is the main visual: a large card at the top of the Pokédex with a 2× sprite, level and XP, current moves, next move and what it evolves into, plus Details and Change partner.
 - **0.6.0:** optional local sprites (fetched by `npm run sprites`, never committed; silhouettes for unseen Pokémon). The README is written for a public audience.
@@ -174,4 +175,6 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 - Pokémon data (names, types, evolutions, moves) and the optional sprites come from [PokeAPI](https://pokeapi.co/).
 - Built to work alongside [TaskNotes](https://github.com/callumalpass/tasknotes) and [Sheiko Task Lifecycle](https://github.com/Ashura-Sheikh/Sheiko-obsidian-plugin).
-- **Licence:** none chosen yet (`UNLICENSED`). Until one is added, all rights are reserved.
+- **Licence:** [MIT](LICENSE), © 2026 Sheikh M Sahil. It covers this plugin's own code and documentation.
+  - It doesn't cover Pokémon names, move names or other Pokémon content. Those belong to their owners and aren't licensed by this project.
+  - It doesn't cover the PokeAPI-derived data or the optional sprites, which come under PokeAPI's own terms.
