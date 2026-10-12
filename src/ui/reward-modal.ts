@@ -31,9 +31,10 @@ export class RewardModal extends Modal {
 			text: `${dexLabel(s.dex)} · ${tierLabel(draw.tier)}`,
 		});
 		renderTypes(contentEl, s);
-		const why: string[] = [`score ${draw.score}/5`];
-		if (draw.sla === true) why.push('closed within SLA');
-		else if (draw.sla === false) why.push('closed outside SLA');
+		const avg = Math.round(draw.average * 10) / 10;
+		const why = [`${draw.closes} closes, average ${avg}`];
+		if (draw.boost > 0) why.push(`daily boost +${draw.boost}`);
+		why.push(`score ${draw.score}/8`);
 		contentEl.createEl('p', { cls: 'sheiko-pokedex-why', text: why.join(' · ') });
 		if (duplicate) {
 			contentEl.createEl('p', {

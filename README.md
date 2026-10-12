@@ -2,21 +2,28 @@
 
 **Private plugin. Not for publication.** It uses Pokémon names, which are trademarks of Nintendo, Game Freak and The Pokémon Company. Keep this repository private, and don't post screenshots publicly. No sprite images are bundled or fetched: every Pokémon is shown as a coloured placeholder badge.
 
-Each time you close a task in [TaskNotes](https://github.com/callumalpass/tasknotes), you catch a random Gen 1 Pokémon. Browse what you've caught in the Pokédex view.
+Close tasks in [TaskNotes](https://github.com/callumalpass/tasknotes) and catch a random Gen 1 Pokémon every 4–7 closes. The more you close in a day, the better your odds. Browse what you've caught in the Pokédex view.
 
 Needs **TaskNotes** and **Sheiko Task Lifecycle**, both enabled. Desktop only.
 
 ## How a catch works
 
-1. **A close is detected.** A task's status changes from open to a completed status (as defined in TaskNotes' own settings) while Obsidian is running. Tasks that were already done when the Pokédex started never pay out, so rewards start from install.
+1. **A close is detected.** A task's status changes from open to a completed status (as defined in TaskNotes' own settings) while Obsidian is running. Tasks that were already done when the Pokédex started never count, so rewards start from install.
 2. **The plugin reads after Sheiko has finished.** It waits 2 seconds (Sheiko waits 0.6 s) and then reads the task's frontmatter. **It never writes to task notes.** All Pokédex state is kept in its own `data.json`.
-3. **Some closes earn nothing:**
-   - a task that has already been through a reward, including after a reopen, a rename or an archive move
+3. **Some closes count for nothing:**
+   - a task that has already counted once, including after a reopen, a rename or an archive move
    - a task closed with `closeReason: superseded` or `parked`
-   - a close beyond the daily limit (default 10). That task never pays out later.
-4. **Rarity tier:** the score sets the odds.
-   - **Score** = priority points (high 3, medium 2, normal 1, other 0) + 2 if the task closed within SLA.
-   - **SLA targets** match the vault's `sla-tracking.base`: high 1 day, medium 2, normal 3, other 7. Closing time is measured from `dateCreated` to `completedDate`.
+   - any close after the day's catch limit (default 3 catches a day) is reached. That close never counts later.
+4. **Each counted close moves you toward the next catch.**
+   - The target is a hidden number from 4 to 7, drawn again after every catch.
+   - You see "close N toward your next catch". The target itself is never shown.
+   - Progress is kept overnight.
+5. **Each close gets a score:** priority points (high 3, medium 2, normal 1, other 0) + 2 if it closed within SLA.
+   - **SLA targets** match the vault's `sla-tracking.base`: high 1 day, medium 2, normal 3, other 7, measured from `dateCreated` to `completedDate`.
+   - If `completedDate` has a date but no time and it's today's date (TaskNotes' default when Sheiko isn't writing), the moment the close was seen is used instead.
+6. **When the target is reached, the catch score sets the rarity odds.**
+   - **Catch score** = the batch's average close score (rounded) + a daily boost of +1 for every 5 closes counted today, up to +3. That gives 0–8.
+   - Using the average stops one high-priority task from carrying a batch of low ones.
 
    | Score | Common | Uncommon | Rare | Legendary |
    |---|---|---|---|---|
@@ -26,9 +33,12 @@ Needs **TaskNotes** and **Sheiko Task Lifecycle**, both enabled. Desktop only.
    | 3 | 42 | 35 | 20 | 3 |
    | 4 | 32 | 37 | 26 | 5 |
    | 5 | 22 | 38 | 32 | 8 |
+   | 6 | 16 | 37 | 37 | 10 |
+   | 7 | 12 | 35 | 41 | 12 |
+   | 8 | 8 | 32 | 45 | 15 |
 
-5. **Species:** the task's `contexts` narrow which types can appear. The mapping is editable in the plugin's settings. If no species in the drawn tier matches, any species in that tier can appear.
-6. **The draw is repeatable.** It's seeded from the task's path and `dateCreated`, so the same task always gives the same result and the logic can be tested.
+7. **Species:** the `contexts` of every close in the batch narrow which types can appear. The mapping is editable in the plugin's settings. If no species in the drawn tier matches, any species in that tier can appear.
+8. **Draws are seeded,** so the logic is repeatable and testable. The hidden target is seeded from the install time and the catch number.
 
 Task size (worked time) doesn't affect rarity. It will scale XP once partner levels arrive.
 
@@ -49,7 +59,7 @@ python3 -I scripts/build_gen1_data.py <folder with the 5 CSV files>
 ```
 npm install
 npm run build   # type-check + bundle to main.js
-npm test        # 32 tests, Node's built-in runner, obsidian mocked
+npm test        # 42 tests, Node's built-in runner, obsidian mocked
 npm run lint
 ```
 
@@ -58,6 +68,8 @@ This repo folder doubles as the test vault. `.obsidian/` and `TaskNotes/` are gi
 ## Status
 
 **0.1.0 = Phase 2** (first working version): close detection, rarity draw, reward window, Pokédex view, tests.
+
+**0.2.0:** a catch every 4–7 closes (hidden target), rarity from the batch average plus a daily boost, limit 3 catches a day, and date-only `completedDate` handled. Saved 0.1.0 data is migrated: catches are kept, and the old default limit of 10 becomes 3.
 
 Still to come:
 - **Phase 3:** XP, levels and evolution for a partner Pokémon you choose and can swap. Task size, from Sheiko's `timeWorkingMinutes` or else `dateCreated`→`completedDate`, scales XP. Duplicates give bonus XP.
