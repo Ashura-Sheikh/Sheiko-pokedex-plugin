@@ -105,6 +105,8 @@ npm test        # 72 tests, Node's built-in runner, obsidian mocked
 npm run lint
 ```
 
+**CI:** `.github/workflows/ci.yml` runs build, lint and test on Node 20, 22 and 24 for every pull request into `main` and every push to `main`.
+
 This repo folder doubles as the test vault. `.obsidian/` and `TaskNotes/` are git-ignored. To try a build, copy or link `main.js`, `manifest.json` and `styles.css` into `.obsidian/plugins/sheiko-pokedex/`.
 
 ## Status
