@@ -1,8 +1,8 @@
 import { App, Modal } from 'obsidian';
 import { PokedexData } from '../store';
-import { STONE_LABELS, START_LEVEL, speciesByDex, stoneEvolutions, xpToNext } from '../progression';
+import { STONE_LABELS, START_LEVEL, currentMoves, nextMove, speciesByDex, stoneEvolutions, xpToNext } from '../progression';
 import { StoneKind } from '../species';
-import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
+import { dexLabel, renderBadge, renderTypes, tierLabel, titleCase } from './art';
 
 export interface DetailActions {
 	makePartner(dex: number): void;
@@ -40,6 +40,23 @@ export class DetailModal extends Modal {
 		const lv = contentEl.createDiv({ cls: 'sheiko-pokedex-level' });
 		lv.createSpan({ text: `Lv ${mon.level}` });
 		renderXpBar(lv, mon.xp, xpToNext(mon.level));
+
+		// Full Red/Blue level-up list: the 4 it knows now, ones it has outgrown, the next one, and later ones.
+		const known = new Set(currentMoves(s, mon.level).map((m) => m.name));
+		const next = nextMove(s, mon.level);
+		contentEl.createEl('h4', { cls: 'sheiko-pokedex-moves-head', text: next ? `Moves · next: ${next.name} at Lv ${next.level}` : 'Moves · all learned' });
+		const list = contentEl.createEl('ul', { cls: 'sheiko-pokedex-movelist' });
+		for (const m of s.moves) {
+			const state = known.has(m.name) ? 'is-known' : m.level <= mon.level ? 'is-forgotten' : m === next ? 'is-next' : 'is-later';
+			const li = list.createEl('li', { cls: state });
+			li.createSpan({ cls: 'sheiko-pokedex-move-level', text: m.level === 1 ? 'Start' : `Lv ${m.level}` });
+			li.createSpan({ cls: 'sheiko-pokedex-move-name', text: m.name });
+			li.createSpan({ cls: 'sheiko-pokedex-move-type', text: titleCase(m.type) });
+			li.setAttr(
+				'aria-label',
+				state === 'is-known' ? 'Knows this move' : state === 'is-forgotten' ? 'Learned earlier, replaced by a newer move' : state === 'is-next' ? 'Next move' : 'Learned later',
+			);
+		}
 
 		const first = new Date(caught.firstAt).toLocaleDateString();
 		contentEl.createEl('p', {

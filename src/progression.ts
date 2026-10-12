@@ -3,7 +3,7 @@
 // Pure functions on plain data, no Obsidian imports.
 
 import { GEN1 } from './data/gen1';
-import { Species, STONE_KINDS, StoneKind } from './species';
+import { Move, Species, STONE_KINDS, StoneKind } from './species';
 
 export const START_LEVEL = 5;
 export const MAX_LEVEL = 100;
@@ -94,6 +94,37 @@ export function stoneEvolutions(dex: number, stones: Stones, all: readonly Speci
 		if (stone) out.push({ to: s, stone, have: stones[stone] > 0 });
 	}
 	return out;
+}
+
+// ---------- Moves (Red/Blue level-up, Sheikh 2026-10-12) ----------
+
+export const MOVE_SLOTS = 4;
+
+/** The moves known at `level`: the last 4 learned, as in the games. */
+export function currentMoves(species: Species, level: number): Move[] {
+	const known = species.moves.filter((m) => m.level <= level);
+	return known.slice(-MOVE_SLOTS);
+}
+
+/** The next move to learn after `level`, or null when there are none left. */
+export function nextMove(species: Species, level: number): Move | null {
+	return species.moves.find((m) => m.level > level) ?? null;
+}
+
+/** Moves learned on the way from `fromLevel` (exclusive) to `toLevel` (inclusive). */
+export function movesLearned(species: Species, fromLevel: number, toLevel: number): Move[] {
+	return species.moves.filter((m) => m.level > fromLevel && m.level <= toLevel);
+}
+
+/** " Learned Ember and Leer!" for moves a level-up reached, or "". Takes the partner's XP gain. */
+export function learnedText(xp: { dex: number; fromLevel: number; toLevel: number } | null): string {
+	if (!xp || xp.toLevel <= xp.fromLevel) return '';
+	const s = speciesByDex(xp.dex);
+	if (!s) return '';
+	const names = movesLearned(s, xp.fromLevel, xp.toLevel).map((m) => m.name);
+	if (!names.length) return '';
+	const list = names.length === 1 ? names[0]! : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]!}`;
+	return ` Learned ${list}!`;
 }
 
 const TYPE_STONE: Record<string, StoneKind> = {

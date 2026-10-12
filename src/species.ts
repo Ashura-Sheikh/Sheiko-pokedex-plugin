@@ -14,6 +14,13 @@ export interface Evolution {
 	stone?: StoneKind;
 }
 
+/** A Red/Blue level-up move. Level 1 means a starting move. */
+export interface Move {
+	level: number;
+	name: string;
+	type: string;
+}
+
 export interface Species {
 	dex: number;
 	name: string;
@@ -22,4 +29,6 @@ export interface Species {
 	captureRate: number;
 	evolvesFrom: number | null;
 	evolution?: Evolution;
+	/** Red/Blue level-up moves, in learning order (Sheikh, 2026-10-12). */
+	moves: Move[];
 }

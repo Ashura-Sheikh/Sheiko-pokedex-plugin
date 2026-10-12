@@ -1,7 +1,7 @@
 import { App, Modal } from 'obsidian';
 import { Draw } from '../rarity';
 import { XpGain } from '../store';
-import { STONE_LABELS, speciesByDex } from '../progression';
+import { STONE_LABELS, learnedText, speciesByDex } from '../progression';
 import { StoneKind } from '../species';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
 
@@ -50,7 +50,7 @@ export class RewardModal extends Modal {
 		if (xp) {
 			const name = speciesByDex(xp.dex)?.name ?? 'Your partner';
 			const up = xp.toLevel > xp.fromLevel ? ` · grew to Lv ${xp.toLevel}!` : '';
-			contentEl.createEl('p', { cls: 'sheiko-pokedex-xp-line', text: `${name} +${xp.gained} XP${up}` });
+			contentEl.createEl('p', { cls: 'sheiko-pokedex-xp-line', text: `${name} +${xp.gained} XP${up}${learnedText(xp)}` });
 		} else {
 			contentEl.createEl('p', { cls: 'sheiko-pokedex-why', text: 'Choose a partner in the Pokédex to earn XP from your closes.' });
 		}
