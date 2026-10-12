@@ -42,6 +42,8 @@ export interface Settings {
 	/** Bulk closes (Sheikh, 2026-10-12): closes beyond this many within the window get half credit. */
 	bulkThreshold: number;
 	bulkWindowMinutes: number;
+	/** Evolution scene without flicker (also automatic when the system asks for reduced motion). */
+	calmEvolution: boolean;
 }
 
 export const DEFAULT_CONTEXT_TYPES = [
@@ -62,6 +64,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	contextTypes: DEFAULT_CONTEXT_TYPES,
 	bulkThreshold: 50,
 	bulkWindowMinutes: 6,
+	calmEvolution: false,
 };
 
 /** Credit a bulk close gets toward the next catch and the daily boost (option C, Sheikh 2026-10-12). */

@@ -30,6 +30,7 @@ import { SHEIKO_ID, Watcher, sheikoEnabled } from './watcher';
 import { RewardInfo, RewardModal } from './ui/reward-modal';
 import { PokedexView, VIEW_TYPE_POKEDEX } from './ui/pokedex-view';
 import { EvolveModal } from './ui/evolve-modal';
+import { GameBoyEvolveModal } from './ui/gameboy-evolve-modal';
 import { DetailModal } from './ui/detail-modal';
 import { PartnerSuggestModal, SpeciesSuggestModal } from './ui/partner-suggest';
 
@@ -192,9 +193,14 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const from = speciesByDex(dex);
 		const to = mon ? check(dex, mon) : null;
 		if (!from || !to) return;
+		// Game Boy flow (Sheikh, 2026-10-12, option B): the scene starts straight away with
+		// "What? X is evolving!"; B, Stop or closing the window stops it.
 		this.showWindow(() =>
-			new EvolveModal(this.app, from, to, null, (yes) =>
-				void this.enqueue(async () => {
+			new GameBoyEvolveModal(this.app, from, to, {
+				cancellable: true,
+				calm: this.calmEvolution(),
+				onResult: (outcome) => void this.enqueue(async () => {
+					const yes = outcome === 'evolved';
 					// Re-check against current data: it may have changed while the window was waiting.
 					const now = this.data.mons[String(from.dex)];
 					if (!now || check(from.dex, now)?.dex !== to.dex) return;
@@ -209,8 +215,13 @@ export default class SheikoPokedexPlugin extends Plugin {
 						new Notice(`${from.name} stopped evolving. You'll be asked again at the next level.`);
 					}
 				}),
-			).open(),
+			}).open(),
 		);
+	}
+
+	/** Calm evolution scene: the plugin setting, or the system's reduced-motion setting. */
+	private calmEvolution(): boolean {
+		return this.data.settings.calmEvolution || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	}
 
 	/** Opens windows one at a time, waiting while any other window (such as Sheiko's sign-off) is open. */
@@ -321,15 +332,23 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.showWindow(() =>
 			new EvolveModal(this.app, from, to, stone, (yes) => {
 				if (!yes) return;
-				void this.enqueue(async () => {
-					const next = evolve(this.data, fromDex, toDex, new Date(), stone);
-					if (!next) {
-						new Notice(`Sheiko Pokédex: no ${STONE_LABELS[stone]} left.`);
-						return;
-					}
-					await this.commit(next);
-					new Notice(`${from.name} evolved into ${to.name}!`);
-				});
+				// Confirmed: play the Game Boy scene. Stone evolutions can't be stopped, as in the game.
+				this.showWindow(() =>
+					new GameBoyEvolveModal(this.app, from, to, {
+						cancellable: false,
+						calm: this.calmEvolution(),
+						onResult: () =>
+							void this.enqueue(async () => {
+								const next = evolve(this.data, fromDex, toDex, new Date(), stone);
+								if (!next) {
+									new Notice(`Sheiko Pokédex: no ${STONE_LABELS[stone]} left.`);
+									return;
+								}
+								await this.commit(next);
+								new Notice(`${from.name} evolved into ${to.name}!`);
+							}),
+					}).open(),
+				);
 			}).open(),
 		);
 	}
@@ -468,6 +487,18 @@ class PokedexSettingTab extends PluginSettingTab {
 						s.bulkWindowMinutes = n;
 						await this.plugin.saveSettings();
 					}
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName('Calm evolution scene')
+			.setDesc(
+				'Replaces the fast flicker of the evolution scene with a slow fade. Turned on automatically when your system asks for reduced motion.',
+			)
+			.addToggle((t) =>
+				t.setValue(s.calmEvolution).onChange(async (v) => {
+					s.calmEvolution = v;
+					await this.plugin.saveSettings();
 				}),
 			);
 
