@@ -11,6 +11,9 @@ import {
 	normalizeData,
 	renamePath,
 	setPartner,
+	testAddPokemon,
+	testGiveEachStone,
+	testGivePartnerXp,
 } from './store';
 import { START_LEVEL, STONE_LABELS, readyLevelEvolution, speciesByDex } from './progression';
 import { StoneKind } from './species';
@@ -19,7 +22,7 @@ import { RewardInfo, RewardModal } from './ui/reward-modal';
 import { PokedexView, VIEW_TYPE_POKEDEX } from './ui/pokedex-view';
 import { EvolveModal } from './ui/evolve-modal';
 import { DetailModal } from './ui/detail-modal';
-import { PartnerSuggestModal } from './ui/partner-suggest';
+import { PartnerSuggestModal, SpeciesSuggestModal } from './ui/partner-suggest';
 
 export default class SheikoPokedexPlugin extends Plugin {
 	data!: PokedexData;
@@ -48,6 +51,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.addRibbonIcon('circle-dot', 'Open Pokédex', () => void this.openPokedex());
 		this.addCommand({ id: 'open', name: 'Open Pokédex', callback: () => void this.openPokedex() });
 		this.addCommand({ id: 'choose-partner', name: 'Choose partner', callback: () => this.choosePartner() });
+		this.addTestCommands();
 		this.addSettingTab(new PokedexSettingTab(this.app, this));
 
 		// Partner in Obsidian's bottom bar (Sheikh, 2026-10-12). Click opens the Pokédex.
@@ -204,6 +208,64 @@ export default class SheikoPokedexPlugin extends Plugin {
 		tick();
 	}
 
+	/**
+	 * Test-only commands, hidden unless Settings → Test tools is on (off by default).
+	 * They exist so evolution and stones can be tried without ~100 real closes.
+	 */
+	private addTestCommands(): void {
+		const on = () => this.data.settings.testTools;
+		this.addCommand({
+			id: 'test-give-xp',
+			name: 'Test: give partner 500 XP',
+			checkCallback: (checking) => {
+				if (!on()) return false;
+				if (!checking) {
+					void this.enqueue(async () => {
+						const { data, xp } = testGivePartnerXp(this.data, 500);
+						if (!xp) {
+							new Notice('Sheiko Pokédex test: choose a partner first.');
+							return;
+						}
+						await this.commit(data);
+						new Notice(`Sheiko Pokédex test${this.xpText(xp)}`);
+						this.maybeAskToEvolve(xp);
+					});
+				}
+				return true;
+			},
+		});
+		this.addCommand({
+			id: 'test-give-stones',
+			name: 'Test: give one of each stone',
+			checkCallback: (checking) => {
+				if (!on()) return false;
+				if (!checking) {
+					void this.enqueue(async () => {
+						await this.commit(testGiveEachStone(this.data));
+						new Notice('Sheiko Pokédex test: added one of each stone.');
+					});
+				}
+				return true;
+			},
+		});
+		this.addCommand({
+			id: 'test-add-pokemon',
+			name: 'Test: add a Pokémon to the Pokédex',
+			checkCallback: (checking) => {
+				if (!on()) return false;
+				if (!checking) {
+					new SpeciesSuggestModal(this.app, (dex) =>
+						void this.enqueue(async () => {
+							await this.commit(testAddPokemon(this.data, dex, new Date()));
+							new Notice(`Sheiko Pokédex test: added ${speciesByDex(dex)?.name ?? dex}.`);
+						}),
+					).open();
+				}
+				return true;
+			},
+		});
+	}
+
 	choosePartner(): void {
 		if (!Object.keys(this.data.caught).length) {
 			new Notice('Sheiko Pokédex: catch a Pokémon first, then choose it as your partner.');
@@ -319,6 +381,18 @@ class PokedexSettingTab extends PluginSettingTab {
 			.addToggle((t) =>
 				t.setValue(s.showRewardWindow).onChange(async (v) => {
 					s.showRewardWindow = v;
+					await this.plugin.saveSettings();
+				}),
+			);
+
+		new Setting(containerEl)
+			.setName('Test tools')
+			.setDesc(
+				'Adds commands to give your partner 500 XP, give one of each stone, and add any Pokémon, so evolution can be tried quickly. For the test vault only; leave off for real use.',
+			)
+			.addToggle((t) =>
+				t.setValue(s.testTools).onChange(async (v) => {
+					s.testTools = v;
 					await this.plugin.saveSettings();
 				}),
 			);

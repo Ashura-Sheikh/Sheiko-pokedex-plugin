@@ -35,6 +35,8 @@ export interface Settings {
 	/** Catches per day. Closes after the limit is reached earn nothing and never pay out later. */
 	dailyCap: number;
 	showRewardWindow: boolean;
+	/** Test-only commands (give XP, stones, add a Pokémon). Off by default; for the test vault. */
+	testTools: boolean;
 	/** "context: type, type" per line. Parsed by parseContextTypes. */
 	contextTypes: string;
 }
@@ -53,6 +55,7 @@ export const DEFAULT_CONTEXT_TYPES = [
 export const DEFAULT_SETTINGS: Settings = {
 	dailyCap: 3,
 	showRewardWindow: true,
+	testTools: false,
 	contextTypes: DEFAULT_CONTEXT_TYPES,
 };
 
@@ -350,6 +353,34 @@ export function renamePath(data: PokedexData, oldPath: string, newPath: string):
 	delete ledger[oldPath];
 	ledger[newPath] = entry;
 	return { ...data, ledger };
+}
+
+// ---------- Test tools (only reachable when settings.testTools is on) ----------
+
+/** Gives the partner XP directly, as if earned from closes. Null without a partner. */
+export function testGivePartnerXp(data: PokedexData, amount: number): { data: PokedexData; xp: XpGain | null } {
+	const next: PokedexData = { ...data, mons: { ...data.mons } };
+	const xp = givePartnerXp(next, amount);
+	return xp ? { data: next, xp } : { data, xp: null };
+}
+
+export function testGiveEachStone(data: PokedexData): PokedexData {
+	const stones = { ...data.stones };
+	for (const k of STONE_KINDS) stones[k] += 1;
+	return { ...data, stones };
+}
+
+/** Adds a Pokémon to the Pokédex without a close (no ledger, progress or daily change). */
+export function testAddPokemon(data: PokedexData, dex: number, now: Date): PokedexData {
+	if (!speciesByDex(dex)) return data;
+	const key = String(dex);
+	const at = now.toISOString();
+	const prev = data.caught[key];
+	return {
+		...data,
+		caught: { ...data.caught, [key]: prev ? { ...prev, count: prev.count + 1, lastAt: at } : { count: 1, firstAt: at, lastAt: at } },
+		mons: { ...data.mons, [key]: data.mons[key] ?? newMon() },
+	};
 }
 
 // ---------- Phase 3 actions (from the UI) ----------

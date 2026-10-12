@@ -68,6 +68,12 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
   The primary type is checked first, then the second.
 - **Using a stone:** click the Pokémon in the Pokédex and choose the stone. The **Trade Stone** stands in for Gen 1's trade evolutions (Kadabra, Machoke, Graveler, Haunter). Eevee's form depends on the stone (Water, Thunder or Fire).
+- **Test tools (off by default):** Settings → **Test tools** adds three commands for the test vault:
+  - **Test: give partner 500 XP:** about 3 presses take a level-5 Charmander to 16
+  - **Test: give one of each stone**
+  - **Test: add a Pokémon to the Pokédex:** not counted as a close
+
+  Leave the setting off for real use.
 
 ## Data
 
@@ -86,7 +92,7 @@ python3 -I scripts/build_gen1_data.py <folder with the 5 CSV files>
 ```
 npm install
 npm run build   # type-check + bundle to main.js
-npm test        # 61 tests, Node's built-in runner, obsidian mocked
+npm test        # 65 tests, Node's built-in runner, obsidian mocked
 npm run lint
 ```
 

@@ -14,7 +14,20 @@ import {
 	xpForClose,
 	xpToNext,
 } from '../src/progression';
-import { CloseInput, PokedexData, declineEvolution, decide, evolve, freshData, normalizeData, setPartner, sizeMinutes } from '../src/store';
+import {
+	CloseInput,
+	PokedexData,
+	declineEvolution,
+	decide,
+	evolve,
+	freshData,
+	normalizeData,
+	setPartner,
+	sizeMinutes,
+	testAddPokemon,
+	testGiveEachStone,
+	testGivePartnerXp,
+} from '../src/store';
 import { hashString, parseContextTypes, seededRandom } from '../src/rarity';
 
 const NOW = new Date('2026-10-12T12:00:00+01:00');
@@ -269,4 +282,39 @@ test('saved 0.3.0 levels, partner and stones survive a reload; a partner that wa
 	assert.equal((saved.stones as Record<string, number>).bogus, undefined);
 	const orphan = normalizeData({ version: 3, caught: {}, partner: 25 }, NOW);
 	assert.equal(orphan.partner, null);
+});
+
+// ---------- Test tools ----------
+
+test('test tools are off by default, including for data saved before they existed', () => {
+	assert.equal(freshData(NOW).settings.testTools, false);
+	assert.equal(normalizeData({ version: 3, settings: { dailyCap: 3 } }, NOW).settings.testTools, false);
+});
+
+test('test: give partner XP levels it up and can make an evolution ready; no partner → nothing', () => {
+	assert.equal(testGivePartnerXp(freshData(NOW), 500).xp, null);
+	let data = setPartner(testAddPokemon(freshData(NOW), 4, NOW), 4);
+	for (let i = 0; i < 3; i++) data = testGivePartnerXp(data, 500).data;
+	assert.ok(data.mons['4']!.level >= 16, `level ${data.mons['4']!.level}`);
+	assert.equal(readyLevelEvolution(4, data.mons['4']!)?.name, 'Charmeleon');
+});
+
+test('test: one of each stone, then a stone evolution works', () => {
+	let data = testGiveEachStone(testAddPokemon(freshData(NOW), 133, NOW));
+	assert.deepEqual(Object.values(data.stones), [1, 1, 1, 1, 1, 1]);
+	data = evolve(data, 133, 135, NOW, 'thunder')!;
+	assert.equal(data.caught['135']?.count, 1, 'Jolteon');
+	assert.equal(data.stones.thunder, 0);
+});
+
+test('test: adding a Pokémon is not a close (no ledger, progress or daily change)', () => {
+	const before = freshData(NOW);
+	const after = testAddPokemon(before, 25, NOW);
+	assert.equal(after.caught['25']?.count, 1);
+	assert.deepEqual(after.mons['25'], newMon());
+	assert.deepEqual(after.ledger, {});
+	assert.deepEqual(after.progress, before.progress);
+	assert.deepEqual(after.daily, before.daily);
+	assert.equal(after.catches, 0);
+	assert.equal(testAddPokemon(before, 999, NOW), before, 'unknown dex ignored');
 });
