@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { GEN1 } from '../data/gen1';
 import { PokedexData, localDate } from '../store';
 import { STONE_KINDS, TIERS } from '../species';
-import { START_LEVEL, STONE_LABELS, speciesByDex, xpToNext } from '../progression';
+import { START_LEVEL, STONE_LABELS, currentMoves, speciesByDex, xpToNext } from '../progression';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
 import { renderXpBar } from './detail-modal';
 
@@ -90,6 +90,9 @@ export class PokedexView extends ItemView {
 				cell.createDiv({ cls: 'sheiko-pokedex-name', text: p.name });
 				cell.createDiv({ cls: 'sheiko-pokedex-cell-level', text: `Lv ${lv}` });
 				renderTypes(cell, p);
+				// Current moves under the card: the last 4 learned by this level (Sheikh, 2026-10-12).
+				const moves = cell.createEl('ul', { cls: 'sheiko-pokedex-moves' });
+				for (const m of currentMoves(p, lv)) moves.createEl('li', { text: m.name });
 				if (c && c.count > 1) cell.createDiv({ cls: 'sheiko-pokedex-count', text: `×${c.count}` });
 				cell.setAttr('aria-label', `${p.name}, level ${lv}, ${tierLabel(p.tier)}. Click for details.`);
 				cell.setAttr('role', 'button');

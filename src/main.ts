@@ -15,7 +15,15 @@ import {
 	testGiveEachStone,
 	testGivePartnerXp,
 } from './store';
-import { START_LEVEL, STONE_LABELS, levelEvolutionAvailable, readyLevelEvolution, speciesByDex, xpToNext } from './progression';
+import {
+	START_LEVEL,
+	STONE_LABELS,
+	learnedText,
+	levelEvolutionAvailable,
+	readyLevelEvolution,
+	speciesByDex,
+	xpToNext,
+} from './progression';
 import { StoneKind } from './species';
 import { SHEIKO_ID, Watcher, sheikoEnabled } from './watcher';
 import { RewardInfo, RewardModal } from './ui/reward-modal';
@@ -126,7 +134,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		if (!xp) return ' · choose a partner to earn XP';
 		const name = speciesByDex(xp.dex)?.name ?? 'your partner';
 		const up = xp.toLevel > xp.fromLevel ? ` ${name} grew to Lv ${xp.toLevel}!` : '';
-		return ` · +${xp.gained} XP to ${name}.${up}`;
+		return ` · +${xp.gained} XP to ${name}.${up}${learnedText(xp)}`;
 	}
 
 	private announce(decision: Decision, file: TFile): void {

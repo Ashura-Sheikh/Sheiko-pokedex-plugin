@@ -72,6 +72,11 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
   The primary type is checked first, then the second.
 - **Using a stone:** click the Pokémon in the Pokédex and choose the stone. The **Trade Stone** stands in for Gen 1's trade evolutions (Kadabra, Machoke, Graveler, Haunter). Eevee's form depends on the stone (Water, Thunder or Fire).
+- **Moves (0.4.0):** each Pokémon uses its original **Red/Blue level-up moves**.
+  - **Under each card:** the moves it knows now, meaning the last 4 learned by its level, as in the games.
+  - **Detail window:** the full list with levels: ✓ for the 4 it knows, faded for moves it has outgrown, → for the next one (e.g. "next: Rage at Lv 22").
+  - **Level-ups:** the XP notice and the reward window add "Learned Ember!".
+  - An evolved form already knows its pre-evolution's starting moves. Red/Blue lists 101 such moves twice; only the first entry is kept.
 - **Test tools (off by default):** Settings → **Test tools** adds three commands for the test vault:
   - **Test: give partner 500 XP:** about 3 presses take a level-5 Charmander to 16
   - **Test: give one of each stone**
@@ -81,7 +86,7 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
 ## Data
 
-`src/data/gen1.ts` is generated from [PokeAPI's CSV data](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) by `scripts/build_gen1_data.py`. It holds names, types, capture rates and evolution links only.
+`src/data/gen1.ts` is generated from [PokeAPI's CSV data](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) by `scripts/build_gen1_data.py`. It holds names, types, capture rates, evolution links (with each stone) and Red/Blue level-up moves (989 after removing repeats). No images.
 - **Tiers:** legendary/mythical (5); then by capture rate: ≤ 45 rare (55), ≤ 120 uncommon (45), otherwise common (46).
 - **Types** are PokeAPI's current ones, so Clefairy is Fairy and Magnemite is Electric/Steel.
 
@@ -96,7 +101,7 @@ python3 -I scripts/build_gen1_data.py <folder with the 5 CSV files>
 ```
 npm install
 npm run build   # type-check + bundle to main.js
-npm test        # 66 tests, Node's built-in runner, obsidian mocked
+npm test        # 72 tests, Node's built-in runner, obsidian mocked
 npm run lint
 ```
 
@@ -109,6 +114,8 @@ This repo folder doubles as the test vault. `.obsidian/` and `TaskNotes/` are gi
 **0.2.0:** a catch every 4–7 closes (hidden target), rarity from the batch average plus a daily boost, limit 3 catches a day, and date-only `completedDate` handled. Saved 0.1.0 data is migrated: catches are kept, and the old default limit of 10 becomes 3.
 
 **0.3.0 = Phase 3:** partner, per-Pokémon levels and XP, evolution prompts (asked first, re-asked a level later after Cancel), earned stones including the Trade Stone, and the partner in the status bar. Saved 0.2.0 data is migrated: every caught species starts at level 5, with no partner and no stones.
+
+**0.4.0:** Red/Blue level-up moves (current 4 under each card, full list in the detail window, "Learned …!" on level-ups), plus status-bar hover/click/right-click.
 
 Still to come:
 - **Phase 4:** polish.
