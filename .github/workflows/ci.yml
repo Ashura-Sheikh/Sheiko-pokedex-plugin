@@ -1,1 +1,41 @@
+# Build, lint and test on every pull request and every push to main.
+# Mirrors Sheiko Task Lifecycle's lint.yml, with two differences for a private repo
+# (Actions minutes are metered): it runs on pull requests and on main only, so a PR
+# branch isn't built twice, and a newer run on the same branch cancels an older one.
 
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+
+        strategy:
+            matrix:
+                node-version: [20.x, 22.x, 24.x]
+
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v6
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: 'npm'
+            - run: npm ci
+            - run: npm run build
+            - run: npm run lint
+            # test/run.mjs sets TZ=Europe/Dublin itself, so date tests behave the same on the runner.
+            - run: npm test
