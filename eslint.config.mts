@@ -21,6 +21,8 @@ export default defineConfig(
 		// This folder doubles as Sheikh's test vault: skip its config and notes.
 		'.obsidian',
 		'TaskNotes',
+		// Generated, git-ignored sprite data (large base64 strings).
+		'src/data/sprites.local.ts',
 	]),
 	{
 		languageOptions: {

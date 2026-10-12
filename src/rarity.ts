@@ -4,7 +4,7 @@
 import { GEN1 } from './data/gen1';
 import { Species, Tier, TIERS } from './species';
 
-// ---------- SLA (mirrors the vault's sla-tracking.base) ----------
+// ---------- SLA targets (fixed here; not read from the vault) ----------
 
 /** Target days by priority: high 1, medium 2, normal 3, anything else 7. */
 export function slaTargetDays(priority: string | null): number {
