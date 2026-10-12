@@ -44,7 +44,11 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
 ## Partner, levels, evolution and stones (0.3.0)
 
-- **Partner:** choose one caught Pokémon as your partner, from the Pokédex view (**Choose partner**, or click a Pokémon and pick **Make partner**) or with the **Choose partner** command. The partner shows in Obsidian's bottom status bar; click it to open the Pokédex.
+- **Partner:** choose one caught Pokémon as your partner, from the Pokédex view (**Choose partner**, or click a Pokémon and pick **Make partner**) or with the **Choose partner** command.
+- **Status bar:** shows the partner and its level, e.g. "Charmeleon Lv 17".
+  - **Hover:** shows XP, e.g. "140 / 170 XP", and whether an evolution is available.
+  - **Click:** opens the Pokédex, or the partner picker if no partner is set yet.
+  - **Right-click:** a menu with Open Pokédex, Choose partner and, when the partner has reached its evolution level (including after a Cancel), **Evolve now**.
 - **XP:** every counted close gives the partner XP:
   - 10, plus 1 per 30 minutes of task size, up to +40
   - task size is Sheiko's `timeWorkingMinutes` when present, otherwise `dateCreated` → close
@@ -92,7 +96,7 @@ python3 -I scripts/build_gen1_data.py <folder with the 5 CSV files>
 ```
 npm install
 npm run build   # type-check + bundle to main.js
-npm test        # 65 tests, Node's built-in runner, obsidian mocked
+npm test        # 66 tests, Node's built-in runner, obsidian mocked
 npm run lint
 ```
 

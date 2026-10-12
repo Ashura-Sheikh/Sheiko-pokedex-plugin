@@ -1,4 +1,4 @@
-import { Notice, Plugin, PluginSettingTab, Setting, TFile, App } from 'obsidian';
+import { Menu, Notice, Plugin, PluginSettingTab, Setting, TFile, App } from 'obsidian';
 import { parseContextTypes } from './rarity';
 import {
 	CloseInput,
@@ -15,7 +15,7 @@ import {
 	testGiveEachStone,
 	testGivePartnerXp,
 } from './store';
-import { START_LEVEL, STONE_LABELS, readyLevelEvolution, speciesByDex } from './progression';
+import { START_LEVEL, STONE_LABELS, levelEvolutionAvailable, readyLevelEvolution, speciesByDex, xpToNext } from './progression';
 import { StoneKind } from './species';
 import { SHEIKO_ID, Watcher, sheikoEnabled } from './watcher';
 import { RewardInfo, RewardModal } from './ui/reward-modal';
@@ -54,10 +54,13 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.addTestCommands();
 		this.addSettingTab(new PokedexSettingTab(this.app, this));
 
-		// Partner in Obsidian's bottom bar (Sheikh, 2026-10-12). Click opens the Pokédex.
+		// Partner in Obsidian's bottom bar (Sheikh, 2026-10-12).
+		// Click: Pokédex (or the partner picker when none is set). Right-click: menu. Hover: level and XP.
 		this.statusBar = this.addStatusBarItem();
 		this.statusBar.addClass('sheiko-pokedex-status', 'mod-clickable');
-		this.statusBar.addEventListener('click', () => void this.openPokedex());
+		this.statusBar.setAttr('data-tooltip-position', 'top');
+		this.statusBar.addEventListener('click', () => this.onStatusBarClick());
+		this.statusBar.addEventListener('contextmenu', (e) => this.showStatusBarMenu(e));
 		this.updateStatusBar();
 
 		this.watcher = new Watcher({
@@ -164,16 +167,25 @@ export default class SheikoPokedexPlugin extends Plugin {
 	/** After a level-up, ask whether the partner should evolve (never automatic). */
 	private maybeAskToEvolve(xp: XpGain | null): void {
 		if (!xp || xp.toLevel <= xp.fromLevel) return;
-		const mon = this.data.mons[String(xp.dex)];
-		const from = speciesByDex(xp.dex);
-		const to = mon ? readyLevelEvolution(xp.dex, mon) : null;
+		this.askLevelEvolution(xp.dex, false);
+	}
+
+	/**
+	 * Shows the Evolve / Cancel window. `manual` is "Evolve now" from the status-bar menu:
+	 * it also offers an evolution that was cancelled earlier at this level.
+	 */
+	private askLevelEvolution(dex: number, manual: boolean): void {
+		const check = manual ? levelEvolutionAvailable : readyLevelEvolution;
+		const mon = this.data.mons[String(dex)];
+		const from = speciesByDex(dex);
+		const to = mon ? check(dex, mon) : null;
 		if (!from || !to) return;
 		this.showWindow(() =>
 			new EvolveModal(this.app, from, to, null, (yes) =>
 				void this.enqueue(async () => {
 					// Re-check against current data: it may have changed while the window was waiting.
 					const now = this.data.mons[String(from.dex)];
-					if (!now || !readyLevelEvolution(from.dex, now)) return;
+					if (!now || check(from.dex, now)?.dex !== to.dex) return;
 					if (yes) {
 						const next = evolve(this.data, from.dex, to.dex, new Date());
 						if (next) {
@@ -316,11 +328,45 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const p = dex !== null ? speciesByDex(dex) : undefined;
 		if (!p || dex === null) {
 			this.statusBar.setText('Pokédex: choose a partner');
+			const hasCaught = Object.keys(this.data.caught).length > 0;
+			this.statusBar.setAttr(
+				'aria-label',
+				hasCaught ? 'Choose a partner to earn XP. Click to choose.' : 'Catch a Pokémon first. Click to open the Pokédex.',
+			);
 			return;
 		}
-		const lv = this.data.mons[String(dex)]?.level ?? START_LEVEL;
-		this.statusBar.setText(`${p.name} Lv ${lv}`);
-		this.statusBar.setAttr('aria-label', 'Open Pokédex');
+		const mon = this.data.mons[String(dex)] ?? { level: START_LEVEL, xp: 0 };
+		this.statusBar.setText(`${p.name} Lv ${mon.level}`);
+		const waiting = levelEvolutionAvailable(dex, mon);
+		const evo = waiting ? ` · can evolve into ${waiting.name}` : '';
+		this.statusBar.setAttr(
+			'aria-label',
+			`${p.name} · Lv ${mon.level} · ${mon.xp} / ${xpToNext(mon.level)} XP${evo}. Click to open the Pokédex, right-click for more.`,
+		);
+	}
+
+	private onStatusBarClick(): void {
+		if (this.data.partner === null && Object.keys(this.data.caught).length > 0) this.choosePartner();
+		else void this.openPokedex();
+	}
+
+	private showStatusBarMenu(e: MouseEvent): void {
+		e.preventDefault();
+		const menu = new Menu();
+		menu.addItem((i) => i.setTitle('Open Pokédex').setIcon('circle-dot').onClick(() => void this.openPokedex()));
+		menu.addItem((i) => i.setTitle('Choose partner').setIcon('user').onClick(() => this.choosePartner()));
+		const dex = this.data.partner;
+		const mon = dex !== null ? this.data.mons[String(dex)] : undefined;
+		const to = dex !== null && mon ? levelEvolutionAvailable(dex, mon) : null;
+		if (dex !== null && to) {
+			menu.addItem((i) =>
+				i
+					.setTitle(`Evolve now: ${to.name}`)
+					.setIcon('sparkles')
+					.onClick(() => this.askLevelEvolution(dex, true)),
+			);
+		}
+		menu.showAtMouseEvent(e);
 	}
 
 	refreshViews(): void {

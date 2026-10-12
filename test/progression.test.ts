@@ -6,6 +6,7 @@ import {
 	STONE_CHANCE,
 	addXp,
 	evolutionsOf,
+	levelEvolutionAvailable,
 	newMon,
 	noStones,
 	readyLevelEvolution,
@@ -317,4 +318,12 @@ test('test: adding a Pokémon is not a close (no ledger, progress or daily chang
 	assert.deepEqual(after.daily, before.daily);
 	assert.equal(after.catches, 0);
 	assert.equal(testAddPokemon(before, 999, NOW), before, 'unknown dex ignored');
+});
+
+test('"Evolve now" still offers an evolution after a Cancel; the automatic prompt does not', () => {
+	const mon = { level: 16, xp: 0, declinedAt: 16 };
+	assert.equal(readyLevelEvolution(4, mon), null, 'no automatic re-ask at the same level');
+	assert.equal(levelEvolutionAvailable(4, mon)?.name, 'Charmeleon', 'manual Evolve now is available');
+	assert.equal(levelEvolutionAvailable(4, { level: 15, xp: 0 }), null, 'not before level 16');
+	assert.equal(levelEvolutionAvailable(133, { level: 99, xp: 0 }), null, 'stone-only Pokémon never');
 });

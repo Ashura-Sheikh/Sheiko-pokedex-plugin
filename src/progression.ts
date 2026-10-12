@@ -81,6 +81,11 @@ export function readyLevelEvolution(dex: number, mon: Mon, all: readonly Species
 	return null;
 }
 
+/** A level evolution the Pokémon has reached, even if it was cancelled ("Evolve now" after a Cancel). */
+export function levelEvolutionAvailable(dex: number, mon: Mon, all: readonly Species[] = GEN1): Species | null {
+	return readyLevelEvolution(dex, { level: mon.level, xp: mon.xp }, all);
+}
+
 /** Stone and trade evolutions for `dex`, with whether a stone of that kind is held. */
 export function stoneEvolutions(dex: number, stones: Stones, all: readonly Species[] = GEN1): { to: Species; stone: StoneKind; have: boolean }[] {
 	const out: { to: Species; stone: StoneKind; have: boolean }[] = [];
