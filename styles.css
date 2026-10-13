@@ -64,7 +64,8 @@
 .sheiko-pokedex-name { font-weight: 600; font-size: var(--font-ui-small); }
 .sheiko-pokedex-count { position: absolute; top: 4px; right: 6px; font-size: var(--font-ui-smaller); color: var(--text-muted); }
 
-.sheiko-pokedex-context-map { width: 100%; font-family: var(--font-monospace); }
+/* "Context to type" textarea (1.1.0: a declarative control, styled via its group's class). */
+.sheiko-pokedex-context-group textarea { width: 100%; font-family: var(--font-monospace); }
 
 /* Phase 3: partner, XP, stones, evolution */
 .sheiko-pokedex-partner {
