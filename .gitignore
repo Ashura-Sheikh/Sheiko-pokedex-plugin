@@ -31,5 +31,6 @@ test-dist/
 TaskNotes/
 Screenshots for this Vault/
 
-# Sprite art: fetched locally by `npm run sprites`, never committed (Sheikh chose S1, 2026-10-12)
+# Sprite art from 0.6–0.7's removed `npm run sprites`: never commit it (S1, 2026-10-12). 0.8.0 downloads
+# sprites from the plugin's settings into the plugin folder instead (DB, 2026-10-13).
 src/data/sprites.local.ts

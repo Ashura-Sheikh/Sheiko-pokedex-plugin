@@ -20,10 +20,8 @@ await esbuild.build({
 	format: 'esm',
 	outdir: out,
 	outExtension: { '.js': '.mjs' },
-	// Tests never use the local sprite file, so they behave the same here and in CI.
 	alias: {
 		obsidian: path.join(root, 'test', 'obsidian-mock.ts'),
-		'sprites-data': path.join(root, 'src', 'data', 'sprites.none.ts'),
 	},
 	logLevel: 'warning',
 });
