@@ -1,6 +1,8 @@
 // PokeAPI's data is BSD-3-Clause, whose second condition asks binary redistributions to
 // reproduce its notice. The data ships inside main.js, so the notice must too (2026-10-13).
-// The generator holds the licence text; these tests check it reaches gen1.ts and main.js.
+// The generator holds the licence text; these tests check it reaches gen1.ts, main.js and the
+// README's Third-party notices (the README check added 2026-10-13: the 0.7.2 changelog said "a test
+// checks both", but until then none checked the README).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -45,4 +47,13 @@ test('the built main.js carries the notice', (t) => {
 	}
 	const built = readFileSync(file, 'utf8');
 	for (const line of licenceLines()) assert.ok(built.includes(line), `main.js missing: ${line.slice(0, 60)}`);
+});
+
+test("the README's Third-party notices reproduce the notice", () => {
+	const readme = readFileSync(root + 'README.md', 'utf8');
+	const start = readme.indexOf('## Third-party notices');
+	assert.ok(start >= 0, 'README has no "## Third-party notices" section');
+	const next = readme.indexOf('\n## ', start + 1);
+	const section = readme.slice(start, next < 0 ? undefined : next);
+	for (const line of licenceLines()) assert.ok(section.includes(line), `README notice missing: ${line.slice(0, 60)}`);
 });
