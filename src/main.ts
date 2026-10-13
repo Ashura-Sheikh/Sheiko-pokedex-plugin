@@ -1,4 +1,4 @@
-import { Menu, Notice, Plugin, PluginSettingTab, Setting, TFile, App, normalizePath, requestUrl } from 'obsidian';
+import { Menu, Notice, Plugin, PluginSettingTab, SettingDefinitionItem, TFile, App, normalizePath, requestUrl } from 'obsidian';
 import { parseContextTypes } from './rarity';
 import {
 	CloseInput,
@@ -625,6 +625,14 @@ export default class SheikoPokedexPlugin extends Plugin {
 	}
 }
 
+/** Settings keys shown as declarative controls (1.1.0, Obsidian 1.13 settings API). */
+type ControlKey = 'dailyCap' | 'showRewardWindow' | 'bulkThreshold' | 'bulkWindowMinutes' | 'calmEvolution' | 'contextTypes' | 'testTools';
+
+/**
+ * Settings tab, declarative since 1.1.0 (Obsidian 1.13's getSettingDefinitions, so settings appear
+ * in Obsidian's settings search; minAppVersion 1.13.0). Plain settings are controls; the Sprites and
+ * Starter pack rows keep their buttons as `render` rows. `update()` redraws (display() is gone).
+ */
 class PokedexSettingTab extends PluginSettingTab {
 	constructor(
 		app: App,
@@ -633,196 +641,219 @@ class PokedexSettingTab extends PluginSettingTab {
 		super(app, plugin);
 	}
 
-	display(): void {
-		const { containerEl } = this;
+	getControlValue(key: string): unknown {
+		return (this.plugin.data.settings as unknown as Record<string, unknown>)[key];
+	}
+
+	async setControlValue(key: string, value: unknown): Promise<void> {
 		const s = this.plugin.data.settings;
-		containerEl.empty();
+		switch (key as ControlKey) {
+			case 'dailyCap':
+				s.dailyCap = Math.floor(Number(value));
+				break;
+			case 'bulkThreshold':
+				s.bulkThreshold = Math.floor(Number(value));
+				break;
+			case 'bulkWindowMinutes':
+				s.bulkWindowMinutes = Number(value);
+				break;
+			case 'showRewardWindow':
+				s.showRewardWindow = value === true;
+				break;
+			case 'calmEvolution':
+				s.calmEvolution = value === true;
+				break;
+			case 'testTools':
+				s.testTools = value === true;
+				break;
+			case 'contextTypes':
+				s.contextTypes = typeof value === 'string' ? value : s.contextTypes;
+				break;
+			default:
+				return;
+		}
+		await this.plugin.saveSettings();
+	}
 
+	getSettingDefinitions(): SettingDefinitionItem<ControlKey>[] {
 		const sheiko = sheikoEnabled(this.app);
-		containerEl.createEl('p', {
-			text: sheiko
-				? 'Sheiko Task Lifecycle is enabled. Task closes earn Pokémon.'
-				: 'Sheiko Task Lifecycle is not enabled. Closes will not earn Pokémon until it is.',
-		});
-
-		new Setting(containerEl)
-			.setName('Daily catch limit')
-			.setDesc('Catches per day. Once reached, further closes that day earn nothing and never count later.')
-			.addText((t) =>
-				t.setValue(String(s.dailyCap)).onChange(async (v) => {
-					const n = Number(v);
-					if (Number.isFinite(n) && n >= 0) {
-						s.dailyCap = Math.floor(n);
-						await this.plugin.saveSettings();
-					}
-				}),
-			);
-
-		new Setting(containerEl)
-			.setName('Show reward window')
-			.setDesc('Off: a short notice instead of a window.')
-			.addToggle((t) =>
-				t.setValue(s.showRewardWindow).onChange(async (v) => {
-					s.showRewardWindow = v;
-					await this.plugin.saveSettings();
-				}),
-			);
-
-		new Setting(containerEl)
-			.setName('Bulk closes')
-			.setDesc(
-				'Closes beyond this many within the window below count as half a close toward your next catch and the daily boost. This does not change XP.',
-			)
-			.addText((t) =>
-				t.setValue(String(s.bulkThreshold)).onChange(async (v) => {
-					const n = Number(v);
-					if (Number.isFinite(n) && n >= 1) {
-						s.bulkThreshold = Math.floor(n);
-						await this.plugin.saveSettings();
-					}
-				}),
-			);
-
-		new Setting(containerEl)
-			.setName('Bulk window (minutes)')
-			.setDesc('How far back closes are counted for the bulk rule.')
-			.addText((t) =>
-				t.setValue(String(s.bulkWindowMinutes)).onChange(async (v) => {
-					const n = Number(v);
-					if (Number.isFinite(n) && n > 0) {
-						s.bulkWindowMinutes = n;
-						await this.plugin.saveSettings();
-					}
-				}),
-			);
-
-		new Setting(containerEl)
-			.setName('Calm evolution scene')
-			.setDesc(
-				'Replaces the fast flicker of the evolution scene with a slow fade. Turned on automatically when your system asks for reduced motion.',
-			)
-			.addToggle((t) =>
-				t.setValue(s.calmEvolution).onChange(async (v) => {
-					s.calmEvolution = v;
-					await this.plugin.saveSettings();
-				}),
-			);
-
-		this.displaySprites(containerEl);
-		this.displayStarter(containerEl);
-
+		const items: SettingDefinitionItem<ControlKey>[] = [
+			{
+				name: sheiko ? 'Sheiko Task Lifecycle is enabled' : 'Sheiko Task Lifecycle is not enabled',
+				desc: sheiko ? 'Task closes earn Pokémon.' : 'Closes will not earn Pokémon until it is.',
+			},
+			{
+				name: 'Daily catch limit',
+				desc: 'Catches per day. Once reached, further closes that day earn nothing and never count later.',
+				control: {
+					type: 'number',
+					key: 'dailyCap',
+					min: 0,
+					step: 1,
+					validate: (v) => (Number.isInteger(v) && v >= 0 ? undefined : 'Enter a whole number, 0 or more.'),
+				},
+			},
+			{
+				name: 'Show reward window',
+				desc: 'Off: a short notice instead of a window.',
+				control: { type: 'toggle', key: 'showRewardWindow' },
+			},
+			{
+				name: 'Bulk closes',
+				desc: 'Closes beyond this many within the window below count as half a close toward your next catch and the daily boost. This does not change XP.',
+				control: {
+					type: 'number',
+					key: 'bulkThreshold',
+					min: 1,
+					step: 1,
+					validate: (v) => (Number.isInteger(v) && v >= 1 ? undefined : 'Enter a whole number, 1 or more.'),
+				},
+			},
+			{
+				name: 'Bulk window (minutes)',
+				desc: 'How far back closes are counted for the bulk rule.',
+				control: {
+					type: 'number',
+					key: 'bulkWindowMinutes',
+					step: 'any',
+					validate: (v) => (Number.isFinite(v) && v > 0 ? undefined : 'Enter a number greater than 0.'),
+				},
+			},
+			{
+				name: 'Calm evolution scene',
+				desc: 'Replaces the fast flicker of the evolution scene with a slow fade. Turned on automatically when your system asks for reduced motion.',
+				control: { type: 'toggle', key: 'calmEvolution' },
+			},
+			this.spritesGroup(),
+			this.starterGroup(),
+		];
 		if (__SHEIKO_DEV__) {
 			// Development builds only (npm run dev). Release builds have the Starter pack instead.
-			new Setting(containerEl)
-				.setName('Test tools (development build)')
-				.setDesc(
-					'Adds unlimited commands to give your partner 500 XP, give one of each stone, and add any Pokémon, so evolution can be tried quickly. Only in development builds; releases do not include them.',
-				)
-				.addToggle((t) =>
-					t.setValue(s.testTools).onChange(async (v) => {
-						s.testTools = v;
-						await this.plugin.saveSettings();
-					}),
-				);
-		}
-
-		new Setting(containerEl)
-			.setName('Context to type')
-			.setDesc('One per line, "context: type, type". A task\'s contexts narrow which types can appear. Unknown contexts allow any type.')
-			.addTextArea((t) => {
-				t.inputEl.rows = 10;
-				t.inputEl.addClass('sheiko-pokedex-context-map');
-				t.setValue(s.contextTypes).onChange(async (v) => {
-					s.contextTypes = v;
-					await this.plugin.saveSettings();
-				});
+			items.push({
+				name: 'Test tools (development build)',
+				desc: 'Adds unlimited commands to give your partner 500 XP, give one of each stone, and add any Pokémon, so evolution can be tried quickly. Only in development builds; releases do not include them.',
+				control: { type: 'toggle', key: 'testTools' },
 			});
+		}
+		items.push({
+			type: 'group',
+			cls: 'sheiko-pokedex-context-group',
+			items: [
+				{
+					name: 'Context to type',
+					desc: 'One per line, "context: type, type". A task\'s contexts narrow which types can appear. Unknown contexts allow any type.',
+					control: { type: 'textarea', key: 'contextTypes', rows: 10 },
+				},
+			],
+		});
+		return items;
 	}
 
 	/** Redraws the tab if it's on screen (after a Starter pack gift is used, which finishes after a dialog). */
 	refreshIfOpen(): void {
-		if (this.containerEl.isConnected) this.display();
+		if (this.containerEl.isConnected) this.update();
 	}
 
 	/** Starter pack (Sheikh, 2026-10-13, 0.9.0): always shown; each gift once per install, asked first. */
-	private displayStarter(containerEl: HTMLElement): void {
+	private starterGroup(): SettingDefinitionItem<ControlKey> {
 		const p = this.plugin.data.starter;
-		new Setting(containerEl).setName('Starter pack').setHeading();
-		containerEl.createEl('p', {
-			cls: 'setting-item-description',
-			text: `A one-time boost to get you started. Each part can be used once, ever, for this install, and nothing refills it. You're asked to confirm before anything is used. Left: ${starterSummary(p)}.`,
-		});
-		new Setting(containerEl)
-			.setName('One of each stone')
-			.setDesc(p.stones ? 'A Fire, Water, Thunder, Leaf, Moon and Trade Stone.' : 'Used.')
-			.addButton((b) =>
-				b
-					.setButtonText(p.stones ? 'Use' : 'Used')
-					.setDisabled(!p.stones)
-					.onClick(() => void this.plugin.starterStones()),
-			);
-		new Setting(containerEl)
-			.setName('Choose a Pokémon')
-			.setDesc(p.pokemon ? `Any Pokémon you haven't caught yet, legendaries included. It joins at Lv ${START_LEVEL}.` : 'Used.')
-			.addButton((b) =>
-				b
-					.setButtonText(p.pokemon ? 'Choose' : 'Used')
-					.setDisabled(!p.pokemon)
-					.onClick(() => void this.plugin.starterPokemon()),
-			);
-		new Setting(containerEl)
-			.setName(`${STARTER_XP} XP for your partner`)
-			.setDesc(
-				p.xpLeft > 0
-					? `${p.xpLeft} of ${STARTER_XP_USES} left. Goes to whoever is your partner when you use it.`
-					: 'All used.',
-			)
-			.addButton((b) =>
-				b
-					.setButtonText(p.xpLeft > 0 ? 'Give XP' : 'Used')
-					.setDisabled(p.xpLeft <= 0)
-					.onClick(() => void this.plugin.starterXp()),
-			);
+		return {
+			type: 'group',
+			heading: 'Starter pack',
+			items: [
+				{
+					name: 'Once per install',
+					desc: `A one-time boost to get you started. Each part can be used once, ever, for this install, and nothing refills it. You're asked to confirm before anything is used. Left: ${starterSummary(p)}.`,
+				},
+				{
+					name: 'One of each stone',
+					render: (setting) => {
+						setting.setDesc(p.stones ? 'A Fire, Water, Thunder, Leaf, Moon and Trade Stone.' : 'Used.').addButton((b) =>
+							b
+								.setButtonText(p.stones ? 'Use' : 'Used')
+								.setDisabled(!p.stones)
+								.onClick(() => void this.plugin.starterStones()),
+						);
+					},
+				},
+				{
+					name: 'Choose a Pokémon',
+					render: (setting) => {
+						setting
+							.setDesc(p.pokemon ? `Any Pokémon you haven't caught yet, legendaries included. It joins at Lv ${START_LEVEL}.` : 'Used.')
+							.addButton((b) =>
+								b
+									.setButtonText(p.pokemon ? 'Choose' : 'Used')
+									.setDisabled(!p.pokemon)
+									.onClick(() => void this.plugin.starterPokemon()),
+							);
+					},
+				},
+				{
+					name: `${STARTER_XP} XP for your partner`,
+					render: (setting) => {
+						setting
+							.setDesc(
+								p.xpLeft > 0
+									? `${p.xpLeft} of ${STARTER_XP_USES} left. Goes to whoever is your partner when you use it.`
+									: 'All used.',
+							)
+							.addButton((b) =>
+								b
+									.setButtonText(p.xpLeft > 0 ? 'Give XP' : 'Used')
+									.setDisabled(p.xpLeft <= 0)
+									.onClick(() => void this.plugin.starterXp()),
+							);
+					},
+				},
+			],
+		};
 	}
 
 	/** Sprites (DB): states the network call, the source and the rules before anything is fetched. */
-	private displaySprites(containerEl: HTMLElement): void {
+	private spritesGroup(): SettingDefinitionItem<ControlKey> {
 		const loaded = this.plugin.spritesLoaded();
-		new Setting(containerEl).setName('Sprites').setHeading();
-		containerEl.createEl('p', { cls: 'setting-item-description', text: SPRITES_INTRO });
-		for (const info of spriteInfo(this.plugin.spritesDir())) {
-			new Setting(containerEl).setName(info.name).setDesc(info.desc);
-		}
 		const error = this.plugin.lastSpriteError;
-		const row = new Setting(containerEl)
-			.setName(loaded ? `Downloaded: ${loaded} sprites` : 'Not downloaded: showing placeholder badges')
-			.setDesc(
-				loaded
-					? 'Remove deletes the sprites folder and brings the badges back. You can download again at any time.'
-					: error
-						? `Last download failed, nothing was saved: ${error}`
-						: 'Takes about 30 seconds. Keep this window open until it finishes.',
-			);
-		if (loaded) {
-			row.addButton((b) =>
-				b.setButtonText('Remove sprites').onClick(() => {
-					void this.plugin.removeSprites().then(() => this.display());
-				}),
-			);
-		} else {
-			row.addButton((b) => {
-				b.setButtonText(this.plugin.spriteDownloadRunning ? 'Downloading…' : 'Download sprites')
-					.setCta()
-					.setDisabled(this.plugin.spriteDownloadRunning)
-					.onClick(() => {
-						b.setDisabled(true);
-						void this.plugin
-							.downloadAndSaveSprites((done, total) => {
-								b.setButtonText(`Downloading ${done}/${total}…`);
-							})
-							.then(() => this.display());
-					});
-			});
-		}
+		return {
+			type: 'group',
+			heading: 'Sprites',
+			items: [
+				{ name: 'Optional sprites', desc: SPRITES_INTRO },
+				...spriteInfo(this.plugin.spritesDir()).map((info) => ({ name: info.name, desc: info.desc })),
+				{
+					name: loaded ? `Downloaded: ${loaded} sprites` : 'Not downloaded: showing placeholder badges',
+					render: (setting) => {
+						setting.setDesc(
+							loaded
+								? 'Remove deletes the sprites folder and brings the badges back. You can download again at any time.'
+								: error
+									? `Last download failed, nothing was saved: ${error}`
+									: 'Takes about 30 seconds. Keep this window open until it finishes.',
+						);
+						if (loaded) {
+							setting.addButton((b) =>
+								b.setButtonText('Remove sprites').onClick(() => {
+									void this.plugin.removeSprites().then(() => this.update());
+								}),
+							);
+						} else {
+							setting.addButton((b) => {
+								b.setButtonText(this.plugin.spriteDownloadRunning ? 'Downloading…' : 'Download sprites')
+									.setCta()
+									.setDisabled(this.plugin.spriteDownloadRunning)
+									.onClick(() => {
+										b.setDisabled(true);
+										void this.plugin
+											.downloadAndSaveSprites((done, total) => {
+												b.setButtonText(`Downloading ${done}/${total}…`);
+											})
+											.then(() => this.update());
+									});
+							});
+						}
+					},
+				},
+			],
+		};
 	}
 }

@@ -8,7 +8,7 @@ An Obsidian plugin that turns finishing tasks into catching Pokémon. Close task
 
 ## Requirements
 
-- Obsidian desktop (the plugin is desktop only)
+- Obsidian desktop **1.13 or later** (the plugin is desktop only). Since 1.1.0 its settings use Obsidian 1.13's settings API, so they show up in Obsidian's settings search. 1.0.1 and earlier ran on Obsidian 1.4.4 and later.
 - [TaskNotes](https://github.com/callumalpass/tasknotes), enabled
 - [Sheiko Task Lifecycle](https://github.com/Ashura-Sheikh/Sheiko-obsidian-plugin), enabled
 
@@ -45,7 +45,7 @@ If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitign
 
 ## How a catch works
 
-1. **A close is detected.** A task's status changes from open to a completed status (as defined in TaskNotes' own settings) while Obsidian is running. Tasks that were already done when the Pokedex started never count, so rewards start from install.
+1. **A close is detected.** A task's status changes from open to a completed status (as defined in TaskNotes' own settings) while Obsidian is running. Tasks that were already done when the Pokedex started never count, so rewards start from install. To know which tasks were already done, the plugin goes through your vault's Markdown files once at startup and reads each one's frontmatter from Obsidian's cache, keeping only the task notes and their status. That's the "vault enumeration" the Community directory's scan reports. It needs every file because TaskNotes can mark a note as a task anywhere in the vault. Nothing is written or sent anywhere.
 2. **The plugin reads after Sheiko has finished.** It waits 2 seconds (Sheiko waits 0.6 s) and then reads the task's frontmatter. **It never writes to your notes.** All Pokedex state is kept in the plugin's own `data.json`.
 3. **Some closes count for nothing:**
    - a task that has already counted once, including after a reopen, a rename or an archive move
