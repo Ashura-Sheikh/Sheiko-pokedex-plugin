@@ -121,12 +121,12 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
   - **Detail window:** the full list with levels: ✓ for the 4 it knows, faded for moves it has outgrown, → for the next one (e.g. "next: Rage at Lv 22").
   - **Level-ups:** the XP notice and the reward window add "Learned Ember!".
   - An evolved form already knows its pre-evolution's starting moves. Red/Blue lists 101 such moves twice; only the first entry is kept.
-- **Test tools (off by default):** Settings → **Test tools** adds three commands for trying things out in a test vault:
-  - **Test: give partner 500 XP:** about 3 presses take a level-5 Charmander to 16
-  - **Test: give one of each stone**
-  - **Test: add a Pokémon to the Pokédex:** not counted as a close
+- **Starter pack (once per install):** a one-time boost, in **Settings → Sheiko Pokédex → Starter pack** or as commands:
+  - **One of each stone:** a Fire, Water, Thunder, Leaf, Moon and Trade Stone, once.
+  - **Choose a Pokémon:** any one you haven't caught yet, legendaries included, once. It joins at level 5 and counts in your Pokédex, but not as a close or a catch. It's marked as from the Starter pack in the plugin's data.
+  - **500 XP for your partner, 3 times:** each use goes to whoever is your partner at the time, so you can split or stack them. About 3 uses take a level-5 Charmander to 16. With no partner, or a partner at level 100, nothing is used up.
 
-  Leave the setting off for real use.
+  You're asked to confirm before anything is used. Once a part is used it's gone for this install: updates, reloads and setting changes never refill it. Commands for used-up parts disappear from the command list.
 
 ## Sprites (optional, downloaded by you)
 
@@ -163,10 +163,13 @@ python3 -I scripts/build_gen1_data.py <folder with the CSV files>
 
 ```
 npm install
-npm run build   # type-check + bundle to main.js
+npm run build   # type-check + bundle to main.js (the release build)
+npm run dev     # development build, rebuilds on change; includes the test tools below
 npm test        # Node's built-in test runner, obsidian mocked; no network, no real images
 npm run lint
 ```
+
+**Test tools (development builds only):** a `npm run dev` build adds a **Test tools** setting with unlimited commands: give the partner 500 XP, give one of each stone, and add any Pokémon. Release builds (`npm run build`, which the release workflow uses) don't contain them, and a test builds the release bundle and checks.
 
 **CI:** `.github/workflows/ci.yml` runs build, lint and test on Node 20, 22 and 24 for every pull request into `main` and every push to `main`.
 
@@ -176,6 +179,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **0.9.0:** the **Starter pack**: once per install, one of each stone, one uncaught Pokémon of your choice (marked as from the Starter pack) and 500 XP three times, each asked first and never refilled. The unlimited test tools are now in development builds only.
 - **Docs (no release):** a [user guide](docs/USER-GUIDE.md) with badge-only screenshots. The image tests now allow PNGs in `docs/images/` only, and fail on any committed PNG of sprite size.
 - **0.8.0:** sprites from a **Download sprites** button in settings: off by default, all-or-nothing, checked, saved in the plugin folder with its own `.gitignore`. Removes the build-time `npm run sprites`. The README credits for the sprites now say who owns them.
 - **0.7.2:** PokeAPI's BSD-3 licence notice for the bundled data, in the README and at the end of `main.js`. A test checks both.
@@ -193,6 +197,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 - **Only live closes count.** A close made while Obsidian is closed, or synced in from another device, isn't seen.
 - **The SLA targets are fixed** in `src/rarity.ts`. They aren't read from your vault.
+- **The Starter pack is once per install, not once per person.** It's tracked in the plugin's `data.json`, alongside your Pokédex. A fresh `data.json` starts with a full pack, and with an empty Pokédex.
 - **The Sheiko check uses an internal Obsidian API.** It reads `app.plugins.enabledPlugins`, which isn't part of the documented API.
 
 ## Credits and licence

@@ -10,12 +10,20 @@ import {
 	evolve,
 	formatCount,
 	normalizeData,
+	STARTER_XP,
+	STARTER_XP_USES,
+	StarterRefusal,
+	StarterResult,
+	claimStarterPokemon,
+	claimStarterStones,
 	renamePath,
 	setPartner,
-	testAddPokemon,
-	testGiveEachStone,
-	testGivePartnerXp,
+	starterChoices,
+	starterSummary,
+	useStarterXp,
 } from './store';
+import { registerTestCommands } from './dev-tools';
+import { ConfirmModal } from './ui/confirm-modal';
 import {
 	START_LEVEL,
 	STONE_LABELS,
@@ -61,6 +69,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 	/** Why the last download failed (shown in settings), or null. Not saved. */
 	lastSpriteError: string | null = null;
 	private unloading = false;
+	private settingTab: PokedexSettingTab | null = null;
 
 	async onload(): Promise<void> {
 		this.data = normalizeData(await this.loadData(), new Date());
@@ -78,8 +87,21 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.addRibbonIcon('circle-dot', 'Open Pokédex', () => void this.openPokedex());
 		this.addCommand({ id: 'open', name: 'Open Pokédex', callback: () => void this.openPokedex() });
 		this.addCommand({ id: 'choose-partner', name: 'Choose partner', callback: () => this.choosePartner() });
-		this.addTestCommands();
-		this.addSettingTab(new PokedexSettingTab(this.app, this));
+		this.addStarterCommands();
+		if (__SHEIKO_DEV__) {
+			// Development builds only; esbuild removes this branch (and src/dev-tools.ts) from release builds.
+			registerTestCommands({
+				app: this.app,
+				addCommand: (c) => this.addCommand(c),
+				getData: () => this.data,
+				enqueue: (fn) => this.enqueue(fn),
+				commit: (next) => this.commit(next),
+				xpText: (xp) => this.xpText(xp),
+				maybeAskToEvolve: (xp) => this.maybeAskToEvolve(xp),
+			});
+		}
+		this.settingTab = new PokedexSettingTab(this.app, this);
+		this.addSettingTab(this.settingTab);
 
 		// Partner in Obsidian's bottom bar (Sheikh, 2026-10-12).
 		// Click: Pokédex (or the partner picker when none is set). Right-click: menu. Hover: level and XP.
@@ -265,62 +287,130 @@ export default class SheikoPokedexPlugin extends Plugin {
 		tick();
 	}
 
-	/**
-	 * Test-only commands, hidden unless Settings → Test tools is on (off by default).
-	 * They exist so evolution and stones can be tried without ~100 real closes.
-	 */
-	private addTestCommands(): void {
-		const on = () => this.data.settings.testTools;
+	// --- Starter pack (Sheikh, 2026-10-13, 0.9.0): one-time per install, never refilled. ---
+
+	/** Commands for each gift; each one is hidden from the command list once it's used up. */
+	private addStarterCommands(): void {
 		this.addCommand({
-			id: 'test-give-xp',
-			name: 'Test: give partner 500 XP',
+			id: 'starter-stones',
+			name: 'Starter pack: one of each stone',
 			checkCallback: (checking) => {
-				if (!on()) return false;
-				if (!checking) {
-					void this.enqueue(async () => {
-						const { data, xp } = testGivePartnerXp(this.data, 500);
-						if (!xp) {
-							new Notice('Sheiko Pokédex test: choose a partner first.');
-							return;
-						}
-						await this.commit(data);
-						new Notice(`Sheiko Pokédex test${this.xpText(xp)}`);
-						this.maybeAskToEvolve(xp);
-					});
-				}
+				if (!this.data.starter.stones) return false;
+				if (!checking) void this.starterStones();
 				return true;
 			},
 		});
 		this.addCommand({
-			id: 'test-give-stones',
-			name: 'Test: give one of each stone',
+			id: 'starter-pokemon',
+			name: 'Starter pack: choose a Pokémon',
 			checkCallback: (checking) => {
-				if (!on()) return false;
-				if (!checking) {
-					void this.enqueue(async () => {
-						await this.commit(testGiveEachStone(this.data));
-						new Notice('Sheiko Pokédex test: added one of each stone.');
-					});
-				}
+				if (!this.data.starter.pokemon) return false;
+				if (!checking) void this.starterPokemon();
 				return true;
 			},
 		});
 		this.addCommand({
-			id: 'test-add-pokemon',
-			name: 'Test: add a Pokémon to the Pokédex',
+			id: 'starter-xp',
+			name: `Starter pack: give partner ${STARTER_XP} XP`,
 			checkCallback: (checking) => {
-				if (!on()) return false;
-				if (!checking) {
-					new SpeciesSuggestModal(this.app, (dex) =>
-						void this.enqueue(async () => {
-							await this.commit(testAddPokemon(this.data, dex, new Date()));
-							new Notice(`Sheiko Pokédex test: added ${speciesByDex(dex)?.name ?? dex}.`);
-						}),
-					).open();
-				}
+				if (this.data.starter.xpLeft <= 0) return false;
+				if (!checking) void this.starterXp();
 				return true;
 			},
 		});
+	}
+
+	/** Asks "can only be used once" first. Resolves to true only if the user confirmed. */
+	private confirmOnce(heading: string, message: string, confirmText: string): Promise<boolean> {
+		return new Promise((resolve) => new ConfirmModal(this.app, heading, message, confirmText, resolve).open());
+	}
+
+	private starterRefusalText(reason: StarterRefusal): string {
+		switch (reason) {
+			case 'used':
+				return 'Sheiko Pokédex: that part of the Starter pack is already used.';
+			case 'no-partner':
+				return 'Sheiko Pokédex: choose a partner first. Nothing was used.';
+			case 'max-level':
+				return 'Sheiko Pokédex: your partner is already at the top level, so the XP would be lost. Nothing was used.';
+			case 'already-caught':
+				return 'Sheiko Pokédex: you already have that Pokémon. Nothing was used.';
+			case 'unknown':
+				return 'Sheiko Pokédex: unknown Pokémon. Nothing was used.';
+		}
+	}
+
+	/** Re-checks inside the queue, so a double click can't use a gift twice. */
+	private async applyStarter(run: () => StarterResult, done: (r: StarterResult & { ok: true }) => void): Promise<void> {
+		await this.enqueue(async () => {
+			const r = run();
+			if (!r.ok) {
+				new Notice(this.starterRefusalText(r.reason));
+				return;
+			}
+			await this.commit(r.data);
+			this.settingTab?.refreshIfOpen();
+			done(r);
+		});
+	}
+
+	async starterStones(): Promise<void> {
+		if (!this.data.starter.stones) return void new Notice(this.starterRefusalText('used'));
+		const yes = await this.confirmOnce(
+			'Starter pack: one of each stone',
+			'Adds a Fire, Water, Thunder, Leaf, Moon and Trade Stone. This can only be used once. Use it now?',
+			'Use it now',
+		);
+		if (!yes) return;
+		await this.applyStarter(
+			() => claimStarterStones(this.data),
+			() => new Notice('Sheiko Pokédex: Starter pack used. You got one of each stone.'),
+		);
+	}
+
+	async starterPokemon(): Promise<void> {
+		if (!this.data.starter.pokemon) return void new Notice(this.starterRefusalText('used'));
+		const choices = starterChoices(this.data);
+		if (!choices.length) return void new Notice('Sheiko Pokédex: you have every Pokémon already. Nothing was used.');
+		// Closing the picker without choosing simply ends here: nothing is used.
+		new SpeciesSuggestModal(this.app, 'Starter pack: choose a Pokémon you have not caught', choices, (dex) =>
+			void this.starterPokemonConfirm(dex),
+		).open();
+	}
+
+	private async starterPokemonConfirm(dex: number): Promise<void> {
+		const name = speciesByDex(dex)?.name ?? `#${dex}`;
+		const yes = await this.confirmOnce(
+			`Starter pack: add ${name}?`,
+			`${name} joins your Pokédex at Lv ${START_LEVEL}. This can only be used once. Use it now?`,
+			'Use it now',
+		);
+		if (!yes) return;
+		await this.applyStarter(
+			() => claimStarterPokemon(this.data, dex, new Date()),
+			() => new Notice(`Sheiko Pokédex: Starter pack used. ${name} joined your Pokédex.`),
+		);
+	}
+
+	async starterXp(): Promise<void> {
+		const pre = useStarterXp(this.data);
+		if (!pre.ok) return void new Notice(this.starterRefusalText(pre.reason));
+		const name = speciesByDex(this.data.partner ?? 0)?.name ?? 'your partner';
+		const left = this.data.starter.xpLeft;
+		const yes = await this.confirmOnce(
+			`Starter pack: ${STARTER_XP} XP for ${name}?`,
+			`Uses 1 of your ${left} remaining (out of ${STARTER_XP_USES}). Each one can only be used once. Use it now?`,
+			'Use it now',
+		);
+		if (!yes) return;
+		await this.applyStarter(
+			() => useStarterXp(this.data),
+			(r) => {
+				const rest = this.data.starter.xpLeft;
+				new Notice(`Sheiko Pokédex: Starter pack${this.xpText(r.xp ?? null)} ${rest} of ${STARTER_XP_USES} left.`);
+				this.maybeAskToEvolve(r.xp ?? null);
+			},
+		);
 	}
 
 	choosePartner(): void {
@@ -624,18 +714,22 @@ class PokedexSettingTab extends PluginSettingTab {
 			);
 
 		this.displaySprites(containerEl);
+		this.displayStarter(containerEl);
 
-		new Setting(containerEl)
-			.setName('Test tools')
-			.setDesc(
-				'Adds commands to give your partner 500 XP, give one of each stone, and add any Pokémon, so evolution can be tried quickly. For the test vault only; leave off for real use.',
-			)
-			.addToggle((t) =>
-				t.setValue(s.testTools).onChange(async (v) => {
-					s.testTools = v;
-					await this.plugin.saveSettings();
-				}),
-			);
+		if (__SHEIKO_DEV__) {
+			// Development builds only (npm run dev). Release builds have the Starter pack instead.
+			new Setting(containerEl)
+				.setName('Test tools (development build)')
+				.setDesc(
+					'Adds unlimited commands to give your partner 500 XP, give one of each stone, and add any Pokémon, so evolution can be tried quickly. Only in development builds; releases do not include them.',
+				)
+				.addToggle((t) =>
+					t.setValue(s.testTools).onChange(async (v) => {
+						s.testTools = v;
+						await this.plugin.saveSettings();
+					}),
+				);
+		}
 
 		new Setting(containerEl)
 			.setName('Context to type')
@@ -648,6 +742,52 @@ class PokedexSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				});
 			});
+	}
+
+	/** Redraws the tab if it's on screen (after a Starter pack gift is used, which finishes after a dialog). */
+	refreshIfOpen(): void {
+		if (this.containerEl.isConnected) this.display();
+	}
+
+	/** Starter pack (Sheikh, 2026-10-13, 0.9.0): always shown; each gift once per install, asked first. */
+	private displayStarter(containerEl: HTMLElement): void {
+		const p = this.plugin.data.starter;
+		new Setting(containerEl).setName('Starter pack').setHeading();
+		containerEl.createEl('p', {
+			cls: 'setting-item-description',
+			text: `A one-time boost to get you started. Each part can be used once, ever, for this install, and nothing refills it. You're asked to confirm before anything is used. Left: ${starterSummary(p)}.`,
+		});
+		new Setting(containerEl)
+			.setName('One of each stone')
+			.setDesc(p.stones ? 'A Fire, Water, Thunder, Leaf, Moon and Trade Stone.' : 'Used.')
+			.addButton((b) =>
+				b
+					.setButtonText(p.stones ? 'Use' : 'Used')
+					.setDisabled(!p.stones)
+					.onClick(() => void this.plugin.starterStones()),
+			);
+		new Setting(containerEl)
+			.setName('Choose a Pokémon')
+			.setDesc(p.pokemon ? `Any Pokémon you haven't caught yet, legendaries included. It joins at Lv ${START_LEVEL}.` : 'Used.')
+			.addButton((b) =>
+				b
+					.setButtonText(p.pokemon ? 'Choose' : 'Used')
+					.setDisabled(!p.pokemon)
+					.onClick(() => void this.plugin.starterPokemon()),
+			);
+		new Setting(containerEl)
+			.setName(`${STARTER_XP} XP for your partner`)
+			.setDesc(
+				p.xpLeft > 0
+					? `${p.xpLeft} of ${STARTER_XP_USES} left. Goes to whoever is your partner when you use it.`
+					: 'All used.',
+			)
+			.addButton((b) =>
+				b
+					.setButtonText(p.xpLeft > 0 ? 'Give XP' : 'Used')
+					.setDisabled(p.xpLeft <= 0)
+					.onClick(() => void this.plugin.starterXp()),
+			);
 	}
 
 	/** Sprites (DB): states the network call, the source and the rules before anything is fetched. */
