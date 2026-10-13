@@ -22,6 +22,8 @@ Not in the Obsidian community directory. Install by hand, using one of these two
 2. Create the folder `<your vault>/.obsidian/plugins/sheiko-pokedex/` and put the 3 files in it.
 3. In Obsidian, go to **Settings → Community plugins**, refresh the list, and enable **Sheiko Pokédex**.
 
+   ![Settings → Community plugins with Sheiko Pokédex v1.0.0 installed and enabled](docs/images/install-plugins.png)
+
 Every Pokémon shows as a **coloured placeholder badge** until you choose to download sprites in the plugin's settings. See [Sprites](#sprites-optional-downloaded-by-you). Releases never contain sprites; the release workflow fails if one ever would.
 
 ### Option 2: build from source
@@ -183,6 +185,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **Docs (no release):** the install screenshot shows v1.0.0, in the README's *Install* and the user guide.
 - **1.0.0:** first stable release. The plugin is the same as 0.9.1; since then the repo has added `CONTRIBUTING.md`, a *Support* section and a test that the README reproduces PokeAPI's notice.
 - **Docs (no release):** `CONTRIBUTING.md` (bugs, features, pull requests, and the no-artwork rules) and a *Support* section.
 - **0.9.1:** the sprite save is all-or-nothing (a temporary folder, moved into place only when complete). The Starter pack's XP confirmation no longer repeats itself. The evolution scene is now called the **Evolution scene** (it was the "Game Boy evolution scene").
