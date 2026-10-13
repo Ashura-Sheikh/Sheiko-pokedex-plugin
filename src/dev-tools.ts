@@ -31,11 +31,11 @@ export function registerTestCommands(host: DevToolsHost): void {
 				void host.enqueue(async () => {
 					const { data, xp } = testGivePartnerXp(host.getData(), 500);
 					if (!xp) {
-						new Notice('Sheiko Pokédex test: choose a partner first.');
+						new Notice('Sheiko Pokedex test: choose a partner first.');
 						return;
 					}
 					await host.commit(data);
-					new Notice(`Sheiko Pokédex test${host.xpText(xp)}`);
+					new Notice(`Sheiko Pokedex test${host.xpText(xp)}`);
 					host.maybeAskToEvolve(xp);
 				});
 			}
@@ -50,7 +50,7 @@ export function registerTestCommands(host: DevToolsHost): void {
 			if (!checking) {
 				void host.enqueue(async () => {
 					await host.commit(testGiveEachStone(host.getData()));
-					new Notice('Sheiko Pokédex test: added one of each stone.');
+					new Notice('Sheiko Pokedex test: added one of each stone.');
 				});
 			}
 			return true;
@@ -58,14 +58,14 @@ export function registerTestCommands(host: DevToolsHost): void {
 	});
 	host.addCommand({
 		id: 'test-add-pokemon',
-		name: 'Test: add a Pokémon to the Pokédex',
+		name: 'Test: add a Pokémon to the Pokedex',
 		checkCallback: (checking) => {
 			if (!on()) return false;
 			if (!checking) {
 				new SpeciesSuggestModal(host.app, 'Test: add which Pokémon?', null, (dex) =>
 					void host.enqueue(async () => {
 						await host.commit(testAddPokemon(host.getData(), dex, new Date()));
-						new Notice(`Sheiko Pokédex test: added ${speciesByDex(dex)?.name ?? dex}.`);
+						new Notice(`Sheiko Pokedex test: added ${speciesByDex(dex)?.name ?? dex}.`);
 					}),
 				).open();
 			}

@@ -115,7 +115,7 @@ export class EvolutionSceneModal extends Modal {
 				new: { colour: dmgCopy(b, false), silhouette: dmgCopy(b, true) },
 			};
 		} catch (e) {
-			console.error('[Sheiko Pokédex] Evolution pictures failed to load', e);
+			console.error('[Sheiko Pokedex] Evolution pictures failed to load', e);
 		}
 		const steps = this.opts.calm ? calmTimeline() : evolutionTimeline();
 		const outcome = await play(steps, {

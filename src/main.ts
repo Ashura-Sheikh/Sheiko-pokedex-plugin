@@ -85,8 +85,8 @@ export default class SheikoPokedexPlugin extends Plugin {
 					choosePartner: () => this.choosePartner(),
 				}),
 		);
-		this.addRibbonIcon('circle-dot', 'Open Pokédex', () => void this.openPokedex());
-		this.addCommand({ id: 'open', name: 'Open Pokédex', callback: () => void this.openPokedex() });
+		this.addRibbonIcon('circle-dot', 'Open Pokedex', () => void this.openPokedex());
+		this.addCommand({ id: 'open', name: 'Open Pokedex', callback: () => void this.openPokedex() });
 		this.addCommand({ id: 'choose-partner', name: 'Choose partner', callback: () => this.choosePartner() });
 		this.addStarterCommands();
 		if (__SHEIKO_DEV__) {
@@ -105,7 +105,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.addSettingTab(this.settingTab);
 
 		// Partner in Obsidian's bottom bar (Sheikh, 2026-10-12).
-		// Click: Pokédex (or the partner picker when none is set). Right-click: menu. Hover: level and XP.
+		// Click: Pokedex (or the partner picker when none is set). Right-click: menu. Hover: level and XP.
 		this.statusBar = this.addStatusBarItem();
 		this.statusBar.addClass('sheiko-pokedex-status', 'mod-clickable');
 		this.statusBar.setAttr('data-tooltip-position', 'top');
@@ -129,7 +129,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(async () => {
 			const ok = await this.watcher.start();
 			if (!ok) {
-				new Notice('Sheiko Pokédex: TaskNotes is not installed and enabled, so no tasks are watched.');
+				new Notice('Sheiko Pokedex: TaskNotes is not installed and enabled, so no tasks are watched.');
 				return;
 			}
 			if (!sheikoEnabled(this.app)) this.warnNoSheiko();
@@ -147,7 +147,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 	}
 
 	private enqueue(fn: () => Promise<void>): Promise<void> {
-		this.queue = this.queue.then(fn).catch((e) => console.error('[Sheiko Pokédex]', e));
+		this.queue = this.queue.then(fn).catch((e) => console.error('[Sheiko Pokedex]', e));
 		return this.queue;
 	}
 
@@ -162,7 +162,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 	private warnNoSheiko(): void {
 		if (this.warnedNoSheiko) return;
 		this.warnedNoSheiko = true;
-		new Notice(`Sheiko Pokédex needs Sheiko Task Lifecycle (${SHEIKO_ID}) enabled. Closes won't earn Pokémon until it is.`, 10000);
+		new Notice(`Sheiko Pokedex needs Sheiko Task Lifecycle (${SHEIKO_ID}) enabled. Closes won't earn Pokémon until it is.`, 10000);
 	}
 
 	private async handleClose(input: CloseInput, file: TFile): Promise<void> {
@@ -189,15 +189,15 @@ export default class SheikoPokedexPlugin extends Plugin {
 			case 'already':
 				return;
 			case 'excluded':
-				new Notice(`Sheiko Pokédex: no catch, "${file.basename}" was closed as ${decision.reason}.`);
+				new Notice(`Sheiko Pokedex: no catch, "${file.basename}" was closed as ${decision.reason}.`);
 				return;
 			case 'capped':
-				new Notice(`Sheiko Pokédex: today's limit of ${decision.cap} catches is reached. "${file.basename}" doesn't count.`);
+				new Notice(`Sheiko Pokedex: today's limit of ${decision.cap} catches is reached. "${file.basename}" doesn't count.`);
 				return;
 			case 'counted':
 				// The target stays hidden (Sheikh, 2026-10-12): show progress, not the goal.
 				new Notice(
-					`Sheiko Pokédex: close ${formatCount(decision.closes)} toward your next catch` +
+					`Sheiko Pokedex: close ${formatCount(decision.closes)} toward your next catch` +
 						`${decision.bulk ? ' (bulk close: half credit)' : ''}${this.xpText(decision.xp)}`,
 				);
 				this.maybeAskToEvolve(decision.xp);
@@ -329,15 +329,15 @@ export default class SheikoPokedexPlugin extends Plugin {
 	private starterRefusalText(reason: StarterRefusal): string {
 		switch (reason) {
 			case 'used':
-				return 'Sheiko Pokédex: that part of the Starter pack is already used.';
+				return 'Sheiko Pokedex: that part of the Starter pack is already used.';
 			case 'no-partner':
-				return 'Sheiko Pokédex: choose a partner first. Nothing was used.';
+				return 'Sheiko Pokedex: choose a partner first. Nothing was used.';
 			case 'max-level':
-				return 'Sheiko Pokédex: your partner is already at the top level, so the XP would be lost. Nothing was used.';
+				return 'Sheiko Pokedex: your partner is already at the top level, so the XP would be lost. Nothing was used.';
 			case 'already-caught':
-				return 'Sheiko Pokédex: you already have that Pokémon. Nothing was used.';
+				return 'Sheiko Pokedex: you already have that Pokémon. Nothing was used.';
 			case 'unknown':
-				return 'Sheiko Pokédex: unknown Pokémon. Nothing was used.';
+				return 'Sheiko Pokedex: unknown Pokémon. Nothing was used.';
 		}
 	}
 
@@ -365,14 +365,14 @@ export default class SheikoPokedexPlugin extends Plugin {
 		if (!yes) return;
 		await this.applyStarter(
 			() => claimStarterStones(this.data),
-			() => new Notice('Sheiko Pokédex: Starter pack used. You got one of each stone.'),
+			() => new Notice('Sheiko Pokedex: Starter pack used. You got one of each stone.'),
 		);
 	}
 
 	async starterPokemon(): Promise<void> {
 		if (!this.data.starter.pokemon) return void new Notice(this.starterRefusalText('used'));
 		const choices = starterChoices(this.data);
-		if (!choices.length) return void new Notice('Sheiko Pokédex: you have every Pokémon already. Nothing was used.');
+		if (!choices.length) return void new Notice('Sheiko Pokedex: you have every Pokémon already. Nothing was used.');
 		// Closing the picker without choosing simply ends here: nothing is used.
 		new SpeciesSuggestModal(this.app, 'Starter pack: choose a Pokémon you have not caught', choices, (dex) =>
 			void this.starterPokemonConfirm(dex),
@@ -383,13 +383,13 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const name = speciesByDex(dex)?.name ?? `#${dex}`;
 		const yes = await this.confirmOnce(
 			`Starter pack: add ${name}?`,
-			`${name} joins your Pokédex at Lv ${START_LEVEL}. This can only be used once. Use it now?`,
+			`${name} joins your Pokedex at Lv ${START_LEVEL}. This can only be used once. Use it now?`,
 			'Use it now',
 		);
 		if (!yes) return;
 		await this.applyStarter(
 			() => claimStarterPokemon(this.data, dex, new Date()),
-			() => new Notice(`Sheiko Pokédex: Starter pack used. ${name} joined your Pokédex.`),
+			() => new Notice(`Sheiko Pokedex: Starter pack used. ${name} joined your Pokedex.`),
 		);
 	}
 
@@ -408,7 +408,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 			() => useStarterXp(this.data),
 			(r) => {
 				const rest = this.data.starter.xpLeft;
-				new Notice(`Sheiko Pokédex: Starter pack${this.xpText(r.xp ?? null)} ${rest} of ${STARTER_XP_USES} left.`);
+				new Notice(`Sheiko Pokedex: Starter pack${this.xpText(r.xp ?? null)} ${rest} of ${STARTER_XP_USES} left.`);
 				this.maybeAskToEvolve(r.xp ?? null);
 			},
 		);
@@ -416,7 +416,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 
 	choosePartner(): void {
 		if (!Object.keys(this.data.caught).length) {
-			new Notice('Sheiko Pokédex: catch a Pokémon first, then choose it as your partner.');
+			new Notice('Sheiko Pokedex: catch a Pokémon first, then choose it as your partner.');
 			return;
 		}
 		new PartnerSuggestModal(this.app, this.data, (dex) => this.makePartner(dex)).open();
@@ -454,7 +454,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 							void this.enqueue(async () => {
 								const next = evolve(this.data, fromDex, toDex, new Date(), stone);
 								if (!next) {
-									new Notice(`Sheiko Pokédex: no ${STONE_LABELS[stone]} left.`);
+									new Notice(`Sheiko Pokedex: no ${STONE_LABELS[stone]} left.`);
 									return;
 								}
 								await this.commit(next);
@@ -471,11 +471,11 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const dex = this.data.partner;
 		const p = dex !== null ? speciesByDex(dex) : undefined;
 		if (!p || dex === null) {
-			this.statusBar.setText('Pokédex: choose a partner');
+			this.statusBar.setText('Pokedex: choose a partner');
 			const hasCaught = Object.keys(this.data.caught).length > 0;
 			this.statusBar.setAttr(
 				'aria-label',
-				hasCaught ? 'Choose a partner to earn XP. Click to choose.' : 'Catch a Pokémon first. Click to open the Pokédex.',
+				hasCaught ? 'Choose a partner to earn XP. Click to choose.' : 'Catch a Pokémon first. Click to open the Pokedex.',
 			);
 			return;
 		}
@@ -485,7 +485,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const evo = waiting ? ` · can evolve into ${waiting.name}` : '';
 		this.statusBar.setAttr(
 			'aria-label',
-			`${p.name} · Lv ${mon.level} · ${mon.xp} / ${xpToNext(mon.level)} XP${evo}. Click to open the Pokédex, right-click for more.`,
+			`${p.name} · Lv ${mon.level} · ${mon.xp} / ${xpToNext(mon.level)} XP${evo}. Click to open the Pokedex, right-click for more.`,
 		);
 	}
 
@@ -497,7 +497,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 	private showStatusBarMenu(e: MouseEvent): void {
 		e.preventDefault();
 		const menu = new Menu();
-		menu.addItem((i) => i.setTitle('Open Pokédex').setIcon('circle-dot').onClick(() => void this.openPokedex()));
+		menu.addItem((i) => i.setTitle('Open Pokedex').setIcon('circle-dot').onClick(() => void this.openPokedex()));
 		menu.addItem((i) => i.setTitle('Choose partner').setIcon('user').onClick(() => this.choosePartner()));
 		const dex = this.data.partner;
 		const mon = dex !== null ? this.data.mons[String(dex)] : undefined;
@@ -574,7 +574,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 			setSprites(urls);
 			return true;
 		} catch (e) {
-			console.warn('[Sheiko Pokédex] Saved sprites not used, showing badges:', e);
+			console.warn('[Sheiko Pokedex] Saved sprites not used, showing badges:', e);
 			this.clearSpriteUrls();
 			return false;
 		} finally {
@@ -596,18 +596,18 @@ export default class SheikoPokedexPlugin extends Plugin {
 			});
 			if (!result.ok) {
 				this.lastSpriteError = result.error;
-				new Notice(`Sheiko Pokédex: sprites not downloaded. ${result.error} Placeholder badges stay.`, 10000);
+				new Notice(`Sheiko Pokedex: sprites not downloaded. ${result.error} Placeholder badges stay.`, 10000);
 				return;
 			}
 			// All-or-nothing (0.9.1): written to a temp folder, then swapped in; on failure nothing changes.
 			await saveSpritesAtomically(this.app.vault.adapter, this.spritesDir(), result.sprites);
 			const ok = await this.loadSprites();
 			this.lastSpriteError = ok ? null : 'Saved but could not be loaded. See the developer console.';
-			new Notice(ok ? `Sheiko Pokédex: ${SPRITE_COUNT} sprites downloaded.` : 'Sheiko Pokédex: sprites saved but could not be loaded. See the console.');
+			new Notice(ok ? `Sheiko Pokedex: ${SPRITE_COUNT} sprites downloaded.` : 'Sheiko Pokedex: sprites saved but could not be loaded. See the console.');
 		} catch (e) {
-			console.error('[Sheiko Pokédex] Sprite download failed:', e);
+			console.error('[Sheiko Pokedex] Sprite download failed:', e);
 			this.lastSpriteError = `Could not save the sprites: ${e instanceof Error ? e.message : String(e)}`;
-			new Notice('Sheiko Pokédex: sprites not downloaded. Placeholder badges stay.', 10000);
+			new Notice('Sheiko Pokedex: sprites not downloaded. Placeholder badges stay.', 10000);
 		} finally {
 			this.spriteDownloadRunning = false;
 		}
@@ -621,7 +621,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		if (await adapter.exists(dir)) await adapter.rmdir(dir, true);
 		this.refreshViews();
 		this.updateStatusBar();
-		new Notice('Sheiko Pokédex: sprites removed. Placeholder badges are back.');
+		new Notice('Sheiko Pokedex: sprites removed. Placeholder badges are back.');
 	}
 }
 

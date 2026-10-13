@@ -1,10 +1,10 @@
-# Sheiko Pokédex
+# Sheiko Pokedex
 
-An Obsidian plugin that turns finishing tasks into catching Pokémon. Close tasks in [TaskNotes](https://github.com/callumalpass/tasknotes) and catch a random Gen 1 Pokémon every 4–7 closes; the more you close in a day, the better your odds. Pick a partner, level it up from your work, evolve it, and fill your Pokédex.
+An Obsidian plugin that turns finishing tasks into catching Pokémon. Close tasks in [TaskNotes](https://github.com/callumalpass/tasknotes) and catch a random Gen 1 Pokémon every 4–7 closes; the more you close in a day, the better your odds. Pick a partner, level it up from your work, evolve it, and fill your Pokedex.
 
 > **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and Pokémon names are trademarks of their respective owners. **This repository contains no Pokémon artwork.** By default every Pokémon is drawn as a coloured placeholder badge. Sprites are optional: you download them yourself from the plugin's settings (see [Sprites](#sprites-optional-downloaded-by-you)).
 
-**New here?** The [user guide](docs/USER-GUIDE.md) walks through what you'll see, with screenshots: your first catch, the Pokédex, a Pokémon's details, the status bar, evolution and sprites.
+**New here?** The [user guide](docs/USER-GUIDE.md) walks through what you'll see, with screenshots: your first catch, the Pokedex, a Pokémon's details, the status bar, evolution and sprites.
 
 ## Requirements
 
@@ -20,9 +20,9 @@ Not in the Obsidian community directory. Install by hand, using one of these two
 
 1. Open the [latest release](https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin/releases/latest) and download `main.js`, `manifest.json` and `styles.css`.
 2. Create the folder `<your vault>/.obsidian/plugins/sheiko-pokedex/` and put the 3 files in it.
-3. In Obsidian, go to **Settings → Community plugins**, refresh the list, and enable **Sheiko Pokédex**.
+3. In Obsidian, go to **Settings → Community plugins**, refresh the list, and enable **Sheiko Pokedex**.
 
-   ![Settings → Community plugins with Sheiko Pokédex v1.0.0 installed and enabled](docs/images/install-plugins.png)
+   ![Settings → Community plugins with Sheiko Pokedex v1.0.0 installed and enabled](docs/images/install-plugins.png)
 
 Every Pokémon shows as a **coloured placeholder badge** until you choose to download sprites in the plugin's settings. See [Sprites](#sprites-optional-downloaded-by-you). Releases never contain sprites; the release workflow fails if one ever would.
 
@@ -45,8 +45,8 @@ If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitign
 
 ## How a catch works
 
-1. **A close is detected.** A task's status changes from open to a completed status (as defined in TaskNotes' own settings) while Obsidian is running. Tasks that were already done when the Pokédex started never count, so rewards start from install.
-2. **The plugin reads after Sheiko has finished.** It waits 2 seconds (Sheiko waits 0.6 s) and then reads the task's frontmatter. **It never writes to your notes.** All Pokédex state is kept in the plugin's own `data.json`.
+1. **A close is detected.** A task's status changes from open to a completed status (as defined in TaskNotes' own settings) while Obsidian is running. Tasks that were already done when the Pokedex started never count, so rewards start from install.
+2. **The plugin reads after Sheiko has finished.** It waits 2 seconds (Sheiko waits 0.6 s) and then reads the task's frontmatter. **It never writes to your notes.** All Pokedex state is kept in the plugin's own `data.json`.
 3. **Some closes count for nothing:**
    - a task that has already counted once, including after a reopen, a rename or an archive move
    - a task closed with `closeReason: superseded` or `parked`
@@ -82,12 +82,12 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
 ## Partner, levels, evolution and stones
 
-- **Partner card:** the partner gets a large card at the top of the Pokédex view: a 2× sprite, level and XP bar, its current moves, its next move and what it evolves into (level, stone or fully evolved).
-- **Partner:** choose one caught Pokémon as your partner, from the Pokédex view (**Choose partner**, or click a Pokémon and pick **Make partner**) or with the **Choose partner** command.
+- **Partner card:** the partner gets a large card at the top of the Pokedex view: a 2× sprite, level and XP bar, its current moves, its next move and what it evolves into (level, stone or fully evolved).
+- **Partner:** choose one caught Pokémon as your partner, from the Pokedex view (**Choose partner**, or click a Pokémon and pick **Make partner**) or with the **Choose partner** command.
 - **Status bar:** shows the partner and its level, e.g. "Charmeleon Lv 17".
   - **Hover:** shows XP, e.g. "140 / 170 XP", and whether an evolution is available.
-  - **Click:** opens the Pokédex, or the partner picker if no partner is set yet.
-  - **Right-click:** a menu with Open Pokédex, Choose partner and, when the partner has reached its evolution level (including after a Cancel), **Evolve now**.
+  - **Click:** opens the Pokedex, or the partner picker if no partner is set yet.
+  - **Right-click:** a menu with Open Pokedex, Choose partner and, when the partner has reached its evolution level (including after a Cancel), **Evolve now**.
 - **XP:** every counted close gives the partner XP:
   - 10, plus 1 per 30 minutes of task size, up to +40
   - task size is Sheiko's `timeWorkingMinutes` when present, otherwise `dateCreated` → close
@@ -96,7 +96,7 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 - **Levels:** every caught Pokémon starts at level 5 and keeps its own level and XP, so swapping partners loses nothing. Going from level L to L+1 takes 10 × L XP, up to level 100.
 - **Evolution by level:** when the partner reaches its evolution level, the **Evolution scene** starts: "What? CHARMELEON is evolving!" on an original green screen. **Press B** (or **Stop**, or close the window) to stop it. Stop it and you're asked again at the next level.
   - The evolved form keeps the level and becomes the partner.
-  - **Both forms stay caught** in the Pokédex.
+  - **Both forms stay caught** in the Pokedex.
 - **The evolution scene** follows Pokémon Red/Blue's own timing (from the pret/pokered disassembly):
   - the Pokémon in colour, then black silhouettes of the old and new forms swapping in 8 bursts that get longer while the pauses get shorter (72 swaps, about 6 seconds)
   - then "CHARMELEON evolved into CHARIZARD!", or "Huh? CHARMELEON stopped evolving!"
@@ -117,15 +117,15 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
   | anything else | a random one |
 
   The primary type is checked first, then the second.
-- **Using a stone:** click the Pokémon in the Pokédex and choose the stone. The **Trade Stone** stands in for Gen 1's trade evolutions (Kadabra, Machoke, Graveler, Haunter). Eevee's form depends on the stone (Water, Thunder or Fire).
+- **Using a stone:** click the Pokémon in the Pokedex and choose the stone. The **Trade Stone** stands in for Gen 1's trade evolutions (Kadabra, Machoke, Graveler, Haunter). Eevee's form depends on the stone (Water, Thunder or Fire).
 - **Moves:** each Pokémon uses its original **Red/Blue level-up moves**.
   - **Under each card:** the moves it knows now, meaning the last 4 learned by its level, as in the games.
   - **Detail window:** the full list with levels: ✓ for the 4 it knows, faded for moves it has outgrown, → for the next one (e.g. "next: Rage at Lv 22").
   - **Level-ups:** the XP notice and the reward window add "Learned Ember!".
   - An evolved form already knows its pre-evolution's starting moves. Red/Blue lists 101 such moves twice; only the first entry is kept.
-- **Starter pack (once per install):** a one-time boost, in **Settings → Sheiko Pokédex → Starter pack** or as commands:
+- **Starter pack (once per install):** a one-time boost, in **Settings → Sheiko Pokedex → Starter pack** or as commands:
   - **One of each stone:** a Fire, Water, Thunder, Leaf, Moon and Trade Stone, once.
-  - **Choose a Pokémon:** any one you haven't caught yet, legendaries included, once. It joins at level 5 and counts in your Pokédex, but not as a close or a catch. It's marked as from the Starter pack in the plugin's data.
+  - **Choose a Pokémon:** any one you haven't caught yet, legendaries included, once. It joins at level 5 and counts in your Pokedex, but not as a close or a catch. It's marked as from the Starter pack in the plugin's data.
   - **500 XP for your partner, 3 times:** each use goes to whoever is your partner at the time, so you can split or stack them. About 3 uses take a level-5 Charmander to 16. With no partner, or a partner at level 100, nothing is used up.
 
   You're asked to confirm before anything is used. Once a part is used it's gone for this install: updates, reloads and setting changes never refill it. Commands for used-up parts disappear from the command list.
@@ -139,7 +139,7 @@ This repository and its releases never contain Pokémon artwork, and tests enfor
 
 The user guide's screenshots in `docs/images/` show placeholder badges only. Until you download sprites, every Pokémon is a coloured placeholder badge.
 
-To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokédex → Sprites** and press **Download sprites**.
+To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokedex → Sprites** and press **Download sprites**.
 
 - **Off by default.** Nothing is downloaded until you press the button. The plugin makes no other network requests.
 - **The network call:** 151 requests, one at a time with a short pause, to `raw.githubusercontent.com`, for the default sprites in [PokeAPI's sprite repository](https://github.com/PokeAPI/sprites) (`sprites/pokemon/1.png` to `151.png`). It takes about half a minute.
@@ -185,6 +185,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **1.0.1:** the plugin's name is now **Sheiko Pokedex**, without the accent, matching its ID (`sheiko-pokedex`). "Pokedex" is spelled the same throughout the app and docs. The ID is unchanged, so your data, sprites and settings stay where they are.
 - **Docs (no release):** the install screenshot shows v1.0.0, in the README's *Install* and the user guide.
 - **1.0.0:** first stable release. The plugin is the same as 0.9.1; since then the repo has added `CONTRIBUTING.md`, a *Support* section and a test that the README reproduces PokeAPI's notice.
 - **Docs (no release):** `CONTRIBUTING.md` (bugs, features, pull requests, and the no-artwork rules) and a *Support* section.
@@ -207,7 +208,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 - **Only live closes count.** A close made while Obsidian is closed, or synced in from another device, isn't seen.
 - **The SLA targets are fixed** in `src/rarity.ts`. They aren't read from your vault.
-- **The Starter pack is once per install, not once per person.** It's tracked in the plugin's `data.json`, alongside your Pokédex. A fresh `data.json` starts with a full pack, and with an empty Pokédex.
+- **The Starter pack is once per install, not once per person.** It's tracked in the plugin's `data.json`, alongside your Pokedex. A fresh `data.json` starts with a full pack, and with an empty Pokedex.
 - **The Sheiko check uses an internal Obsidian API.** It reads `app.plugins.enabledPlugins`, which isn't part of the documented API.
 
 ## Credits and licence

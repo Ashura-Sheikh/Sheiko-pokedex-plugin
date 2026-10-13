@@ -52,13 +52,13 @@ export class RewardModal extends Modal {
 			const up = xp.toLevel > xp.fromLevel ? ` · grew to Lv ${xp.toLevel}!` : '';
 			contentEl.createEl('p', { cls: 'sheiko-pokedex-xp-line', text: `${name} +${xp.gained} XP${up}${learnedText(xp)}` });
 		} else {
-			contentEl.createEl('p', { cls: 'sheiko-pokedex-why', text: 'Choose a partner in the Pokédex to earn XP from your closes.' });
+			contentEl.createEl('p', { cls: 'sheiko-pokedex-why', text: 'Choose a partner in the Pokedex to earn XP from your closes.' });
 		}
 		if (stone) {
 			contentEl.createEl('p', { cls: 'sheiko-pokedex-stone-found', text: `You found a ${STONE_LABELS[stone]}!` });
 		}
 		const buttons = contentEl.createDiv({ cls: 'modal-button-container' });
-		buttons.createEl('button', { text: 'Open Pokédex' }).addEventListener('click', () => {
+		buttons.createEl('button', { text: 'Open Pokedex' }).addEventListener('click', () => {
 			this.close();
 			this.openPokedex();
 		});

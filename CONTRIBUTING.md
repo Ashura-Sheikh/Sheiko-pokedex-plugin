@@ -1,4 +1,4 @@
-# Contributing to Sheiko Pokédex
+# Contributing to Sheiko Pokedex
 
 Thanks for your interest. This is a small, unofficial fan plugin maintained on a best-effort basis by one person, so please keep that in mind when opening issues or pull requests.
 
@@ -9,14 +9,14 @@ Open an issue on [GitHub](https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin
 - Your Obsidian version, the plugin version, and your **TaskNotes** and **Sheiko Task Lifecycle** versions (development testing uses TaskNotes 4.13.8 and Sheiko Task Lifecycle 0.2.2)
 - What you did, what you expected, and what happened instead
 - Whether you have sprites downloaded or are on the placeholder badges
-- If your Pokédex looks wrong: the relevant part of the plugin's `data.json`. **Remove anything private first.** The `ledger` lists your task files by path, so it shows your task names.
-- Any error in the developer console (lines start with `[Sheiko Pokédex]`)
+- If your Pokedex looks wrong: the relevant part of the plugin's `data.json`. **Remove anything private first.** The `ledger` lists your task files by path, so it shows your task names.
+- Any error in the developer console (lines start with `[Sheiko Pokedex]`)
 
-**Screenshots:** please take them on the placeholder badges (**Settings → Sheiko Pokédex → Remove sprites** first). The sprite artwork belongs to Nintendo / Game Freak and isn't ours to share.
+**Screenshots:** please take them on the placeholder badges (**Settings → Sheiko Pokedex → Remove sprites** first). The sprite artwork belongs to Nintendo / Game Freak and isn't ours to share.
 
 ## Suggesting a feature
 
-Open an issue describing the problem you want solved, not just the solution. Sheiko Pokédex deliberately stays small:
+Open an issue describing the problem you want solved, not just the solution. Sheiko Pokedex deliberately stays small:
 
 - It **never writes to your notes.** Everything lives in the plugin's own `data.json`.
 - It makes **no network requests** except the optional **Download sprites** button.

@@ -27,7 +27,7 @@ export class PokedexView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return 'Pokédex';
+		return 'Pokedex';
 	}
 
 	getIcon(): string {
@@ -51,7 +51,7 @@ export class PokedexView extends ItemView {
 		const closesToday = isToday ? data.daily.closes : 0;
 
 		const head = el.createDiv({ cls: 'sheiko-pokedex-head' });
-		head.createEl('h2', { text: 'Pokédex' });
+		head.createEl('h2', { text: 'Pokedex' });
 
 		this.renderPartner(head, data);
 
