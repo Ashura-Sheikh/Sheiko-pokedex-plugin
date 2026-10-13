@@ -14,7 +14,9 @@ import {
 	SPRITES_GITIGNORE,
 	checkSprite,
 	downloadSprites,
+	SPRITES_INTRO,
 	spriteFileName,
+	spriteInfo,
 	spriteUrl,
 } from '../src/sprites';
 
@@ -170,4 +172,27 @@ test('main.ts only fetches when the user presses the button', () => {
 	const calls = main.match(/downloadAndSaveSprites\(/g)?.length;
 	assert.equal(calls, 2, 'its definition plus the one call from the Download button');
 	assert.ok(!/void this\.downloadAndSaveSprites/.test(main), 'never started automatically');
+});
+
+test('settings explain the download before it happens (RAID row 87, condition 3)', () => {
+	const rows = spriteInfo('.obsidian/plugins/sheiko-pokedex/sprites');
+	const text = [SPRITES_INTRO, ...rows.map((r) => `${r.name}: ${r.desc}`)].join('\n');
+	assert.deepEqual(
+		rows.map((r) => r.name),
+		['What you get', 'Where they come from', 'Checks', 'Where they are saved', 'Who owns them'],
+	);
+	for (const must of [
+		'Nothing is downloaded unless you press',
+		'github.com/PokeAPI/sprites',
+		'151 requests to raw.githubusercontent.com',
+		'no other network requests',
+		'PNG, 96×96 and under 64 KB',
+		'nothing is saved and the badges stay',
+		'.obsidian/plugins/sheiko-pokedex/sprites',
+		'.gitignore',
+		'Nintendo / Game Freak',
+		'do not commit, share or redistribute',
+	]) {
+		assert.ok(text.includes(must), `settings text missing: ${must}`);
+	}
 });

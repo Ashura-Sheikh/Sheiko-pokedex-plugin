@@ -75,3 +75,42 @@ export async function downloadSprites(deps: DownloadDeps): Promise<DownloadResul
 /** Written next to the sprites so a vault kept in git doesn't commit them. */
 export const SPRITES_GITIGNORE =
 	'# Sheiko Pokédex sprites: downloaded for your own use, not for redistribution. Do not commit.\n*\n';
+
+/** First line of the Sprites section in settings. */
+export const SPRITES_INTRO =
+	'Optional pixel sprites for every Pokémon, in place of the coloured badges. Nothing is downloaded unless you press Download sprites below.';
+
+/** The rows shown above the Download button, so users know exactly what happens before they press it. */
+export function spriteInfo(dir: string): { name: string; desc: string }[] {
+	return [
+		{
+			name: 'What you get',
+			desc: `${SPRITE_COUNT} pixel sprites, one for each Gen 1 Pokémon: ${SPRITE_SIZE}×${SPRITE_SIZE} PNG files, about 120 KB in total. Unseen Pokémon show as black silhouettes.`,
+		},
+		{
+			name: 'Where they come from',
+			desc:
+				"PokeAPI's sprite repository on GitHub (github.com/PokeAPI/sprites). " +
+				`The download makes ${SPRITE_COUNT} requests to raw.githubusercontent.com, one at a time with a short pause, ` +
+				'and takes about 30 seconds. The plugin makes no other network requests.',
+		},
+		{
+			name: 'Checks',
+			desc:
+				`Each image must be a PNG, ${SPRITE_SIZE}×${SPRITE_SIZE} and under ${MAX_SPRITE_BYTES / 1024} KB. ` +
+				`All ${SPRITE_COUNT} are downloaded and checked before anything is saved. ` +
+				'If the source cannot be reached or any image fails a check, nothing is saved and the badges stay. ' +
+				'Saved sprites are checked again each time Obsidian starts.',
+		},
+		{
+			name: 'Where they are saved',
+			desc: `${dir}, as 001.png to ${spriteFileName(SPRITE_COUNT)}. The folder has its own .gitignore, so a vault kept in git won't commit them.`,
+		},
+		{
+			name: 'Who owns them',
+			desc:
+				'The artwork belongs to Nintendo / Game Freak. It is not part of this plugin or its licence. ' +
+				'Keep it for your own use: do not commit, share or redistribute it.',
+		},
+	];
+}
