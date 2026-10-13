@@ -21,7 +21,7 @@ You need Obsidian desktop with [TaskNotes](https://github.com/callumalpass/taskn
 
 If either required plugin is missing, a notice tells you, and closes won't earn Pokémon until it's enabled.
 
-<!-- screenshot needed: Settings → Community plugins, Sheiko Pokédex enabled, showing the current version -->
+![Settings → Community plugins with Sheiko Pokédex installed and enabled](images/install-plugins.png)
 
 ## 2. Close a task, catch a Pokémon
 
@@ -40,7 +40,7 @@ The number of closes needed is hidden and changes after every catch (somewhere f
 
 Prefer something quieter? Turn off **Show reward window** in the plugin's settings to get a short notice instead.
 
-<!-- screenshot needed: the reward window after a catch, current version (score out of 8, XP line) -->
+![The reward window: Jolteon caught, the batch's closes, average and score out of 8, and the partner's XP](images/reward-window.png)
 
 ## 3. The Pokédex view
 
@@ -48,17 +48,18 @@ Open it from the ribbon icon (**Open Pokédex**), from the **Open Pokédex** com
 
 - **Partner card** at the top: your partner with its level and XP bar, its current moves, its next move and what it evolves into. **Details** opens its full page; **Change partner** picks another.
 - **Stats:** species caught out of 151, total catches, catches and closes today, progress toward the next catch, and how many of each rarity you've caught.
+- **Stones:** how many of each of the 6 stones you hold (Fire, Water, Thunder, Leaf, Moon, Trade). Stones you have none of are dimmed.
 - **The grid:** all 151 Gen 1 Pokémon. The ones you've caught show their name, level, types and the 4 moves they know. The rest show as **???**.
 
 You won't have a partner at first. Choose one with **Choose partner** in the view, the **Choose partner** command, or **Make partner** on any Pokémon you've caught. Only your partner earns XP.
 
-<!-- screenshot needed: the Pokédex view in badge mode, partner card, stats row and part of the grid -->
+![The Pokédex view: the partner card, the stats and stones rows, and the start of the grid](images/pokedex-view.png)
 
 ## 4. A Pokémon's details
 
 Click any Pokémon you've caught to open its details.
 
-![A Pokémon's details: Charmeleon, level 18, with its XP bar and its Red/Blue level-up moves](images/detail-view.png)
+![A Pokémon's details: Charmander, level 18, with its XP bar, its Red/Blue level-up moves and Make partner](images/detail-view.png)
 
 - Its number, rarity, types, level and XP.
 - **Moves:** the full Red/Blue list with the level each is learned at. ✓ marks the 4 it knows now, faded moves are ones it has outgrown, and → marks the next one.
@@ -80,20 +81,20 @@ Your partner sits in Obsidian's status bar, for example "Charmeleon Lv 18".
 
 ## 6. Evolution
 
-**By level.** When your partner reaches its evolution level, the **Game Boy evolution scene** starts straight away: "What? CHARMELEON is evolving!" on a green screen, with the old and new forms flickering in Red/Blue's own timing.
+**By level.** When your partner reaches its evolution level, the **Evolution scene** starts straight away: "What? CHARMELEON is evolving!" on a green screen, with the old and new forms flickering in Red/Blue's own timing. Without sprites, each form is shown as its badge letter.
 
 - To stop it, press **B**, press **Stop**, or close the window. You'll be asked again at the next level, or any time with **Evolve now** in the status-bar menu.
 - If you let it finish, the evolved form takes over as your partner, keeping its level.
 - **Both forms stay caught** in your Pokédex.
 - **Calm evolution scene** in the settings replaces the flicker with a slow fade. It's also used automatically when your system asks for reduced motion.
 
-<!-- screenshot needed: the Game Boy evolution scene in badge mode -->
+![The Evolution scene in badge mode: CATERPIE evolved into METAPOD](images/evolution-scene.png)
 
 **By stone.** Some Pokémon evolve with a stone instead. Stones are found now and then with a catch. To use one, open the Pokémon's details and press the stone's button. You'll be asked to confirm first:
 
 ![Using a Thunder Stone on Eevee: confirm before it evolves](images/stone-evolution.png)
 
-Press **Evolve** and the same Game Boy scene plays. As in the game, a stone evolution can't be stopped once it starts. The stone is used up, and both forms stay in your Pokédex.
+Press **Evolve** and the same Evolution scene plays. As in the game, a stone evolution can't be stopped once it starts. The stone is used up, and both forms stay in your Pokédex.
 
 ## 7. Sprites (optional)
 
@@ -121,4 +122,8 @@ Want a head start? Every install comes with a one-time **Starter pack**. Find it
 
 Each part asks **"This can only be used once. Use it now?"** before anything happens. Once used, it's gone for good on this install: updates and reloads don't refill it. The settings show what's left, and a used-up part's command disappears.
 
-<!-- screenshot needed: Settings → Starter pack, in badge mode -->
+![The Starter pack in settings, unused: stones, 1 Pokémon and XP 3 of 3 left](images/starter-pack-full.png)
+
+After using the stones, the Pokémon and one XP gift, the used parts show **Used** and the XP shows 2 of 3:
+
+![The Starter pack after some use: stones and Pokémon used, XP 2 of 3 left](images/starter-pack-used.png)
