@@ -183,6 +183,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **1.0.0:** first stable release. The plugin is the same as 0.9.1; since then the repo has added `CONTRIBUTING.md`, a *Support* section and a test that the README reproduces PokeAPI's notice.
 - **Docs (no release):** `CONTRIBUTING.md` (bugs, features, pull requests, and the no-artwork rules) and a *Support* section.
 - **0.9.1:** the sprite save is all-or-nothing (a temporary folder, moved into place only when complete). The Starter pack's XP confirmation no longer repeats itself. The evolution scene is now called the **Evolution scene** (it was the "Game Boy evolution scene").
 - **0.9.0:** the **Starter pack**: once per install, one of each stone, one uncaught Pokémon of your choice (marked as from the Starter pack) and 500 XP three times, each asked first and never refilled. The unlimited test tools are now in development builds only.
