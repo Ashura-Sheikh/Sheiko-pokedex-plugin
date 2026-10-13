@@ -76,6 +76,73 @@ export async function downloadSprites(deps: DownloadDeps): Promise<DownloadResul
 export const SPRITES_GITIGNORE =
 	'# Sheiko Pokédex sprites: downloaded for your own use, not for redistribution. Do not commit.\n*\n';
 
+/** The file operations the save needs; Obsidian's DataAdapter has all of them. */
+export interface SpriteFs {
+	exists(path: string): Promise<boolean>;
+	mkdir(path: string): Promise<void>;
+	write(path: string, data: string): Promise<void>;
+	writeBinary(path: string, data: ArrayBuffer): Promise<void>;
+	/** Files and folders (DataAdapter.rename: "Rename a file or folder"). */
+	rename(from: string, to: string): Promise<void>;
+	rmdir(path: string, recursive: boolean): Promise<void>;
+}
+
+async function removeQuietly(fs: SpriteFs, path: string): Promise<void> {
+	try {
+		if (await fs.exists(path)) await fs.rmdir(path, true);
+	} catch {
+		// Best effort: a leftover temp folder is ignored by loading and removed by the next save.
+	}
+}
+
+/**
+ * Saves the sprites all-or-nothing (0.9.1, project-manager's 0.8.0 gate note: the save step wasn't
+ * atomic). Everything is written into `<dir>.tmp` first, `.gitignore` before any image, so the folder
+ * is never committable. Only when every file is written is the temp folder swapped into place. On any
+ * failure the temp folder is removed and `dir` is exactly as it was. Throws the original error.
+ */
+export async function saveSpritesAtomically(fs: SpriteFs, dir: string, sprites: Map<number, Uint8Array>): Promise<void> {
+	const tmp = `${dir}.tmp`;
+	const old = `${dir}.old`;
+	// Leftovers from a save that was interrupted (e.g. Obsidian closed mid-way).
+	await removeQuietly(fs, tmp);
+	await removeQuietly(fs, old);
+	try {
+		await fs.mkdir(tmp);
+		await fs.write(`${tmp}/.gitignore`, SPRITES_GITIGNORE);
+		for (const [dex, bytes] of sprites) {
+			const copy = bytes.slice(); // its own ArrayBuffer, exactly the PNG's bytes
+			await fs.writeBinary(`${tmp}/${spriteFileName(dex)}`, copy.buffer);
+		}
+	} catch (e) {
+		await removeQuietly(fs, tmp);
+		throw e;
+	}
+	const hadDir = await fs.exists(dir);
+	if (hadDir) {
+		try {
+			await fs.rename(dir, old);
+		} catch (e) {
+			await removeQuietly(fs, tmp);
+			throw e;
+		}
+	}
+	try {
+		await fs.rename(tmp, dir);
+	} catch (e) {
+		if (hadDir) {
+			try {
+				await fs.rename(old, dir);
+			} catch {
+				// Couldn't put the old folder back; it stays at `<dir>.old` and loading shows badges.
+			}
+		}
+		await removeQuietly(fs, tmp);
+		throw e;
+	}
+	if (hadDir) await removeQuietly(fs, old);
+}
+
 /** First line of the Sprites section in settings. */
 export const SPRITES_INTRO =
 	'Optional pixel sprites for every Pokémon, in place of the coloured badges. Nothing is downloaded unless you press Download sprites below.';

@@ -20,6 +20,7 @@ import {
 	setPartner,
 	starterChoices,
 	starterSummary,
+	starterXpConfirmText,
 	useStarterXp,
 } from '../src/store';
 
@@ -158,6 +159,13 @@ test('XP: uses can be split between partners', () => {
 	const r = ok(useStarterXp(data));
 	assert.equal(r.xp?.dex, 7);
 	assert.equal(r.data.starter.xpLeft, STARTER_XP_USES - 2);
+});
+
+test('XP confirmation says how many are left without repeating itself (0.9.1)', () => {
+	assert.equal(starterXpConfirmText(3), 'Uses 1 of the 3 you have left. Each can only be used once. Use it now?');
+	assert.equal(starterXpConfirmText(2), 'Uses 1 of the 2 you have left. Each can only be used once. Use it now?');
+	assert.equal(starterXpConfirmText(1), 'This is your last one. Each can only be used once. Use it now?');
+	for (const n of [1, 2, 3]) assert.ok(!/out of|remaining/.test(starterXpConfirmText(n)), 'old 0.9.0 wording gone');
 });
 
 test('settings summary lists what is left', () => {

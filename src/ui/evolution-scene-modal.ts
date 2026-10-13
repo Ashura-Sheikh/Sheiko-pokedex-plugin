@@ -8,7 +8,7 @@ import {
 	Step,
 	calmTimeline,
 	evolutionText,
-	gameBoyTimeline,
+	evolutionTimeline,
 	play,
 	toDmg,
 } from '../evolution-anim';
@@ -45,7 +45,7 @@ function dmgCopy(src: ImageData, silhouette: boolean): ImageData {
 	return out;
 }
 
-export interface GameBoyEvolveOptions {
+export interface EvolutionSceneOptions {
 	/** Level evolutions can be stopped (B / Stop / closing the window); stone ones can't. */
 	cancellable: boolean;
 	/** Calm mode: no flicker (reduced-motion system setting or the plugin setting). */
@@ -58,7 +58,7 @@ export interface GameBoyEvolveOptions {
  * The Red/Blue evolution scene on an original Game Boy green screen
  * (Sheikh, 2026-10-12: flow B, look 2, calm mode for reduced motion).
  */
-export class GameBoyEvolveModal extends Modal {
+export class EvolutionSceneModal extends Modal {
 	private cancel = false;
 	private closed = false;
 	private delivered = false;
@@ -71,7 +71,7 @@ export class GameBoyEvolveModal extends Modal {
 		app: App,
 		private from: Species,
 		private to: Species,
-		private opts: GameBoyEvolveOptions,
+		private opts: EvolutionSceneOptions,
 	) {
 		super(app);
 	}
@@ -117,7 +117,7 @@ export class GameBoyEvolveModal extends Modal {
 		} catch (e) {
 			console.error('[Sheiko Pokédex] Evolution pictures failed to load', e);
 		}
-		const steps = this.opts.calm ? calmTimeline() : gameBoyTimeline();
+		const steps = this.opts.calm ? calmTimeline() : evolutionTimeline();
 		const outcome = await play(steps, {
 			render: (s) => this.render(s),
 			wait: (ms) => (this.closed ? Promise.resolve() : new Promise((r) => window.setTimeout(r, ms))),

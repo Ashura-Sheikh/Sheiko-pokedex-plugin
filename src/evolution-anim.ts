@@ -1,11 +1,11 @@
-// Game Boy evolution scene (Sheikh, 2026-10-12: option B flow, original green screen,
+// Evolution scene, called the Game Boy evolution scene until 0.9.1 (Sheikh, 2026-10-12: option B flow, original green screen,
 // calm mode for reduced motion). Timing follows Pokémon Red/Blue's EvolveMon routine in
 // the pret/pokered disassembly (engine/movie/evolution.asm):
 //   - 80 frames of the old Pokémon in colour, then the palette goes black (silhouettes)
 //   - 8 cycles: a cancel-check pause of c frames (16, 14, ... 2), then b back-and-forth
 //     swaps (1, 2, ... 8), each swap held 3 frames (Delay3); 72 swaps in total
 //   - then the new Pokémon in colour. B is read every frame of every pause.
-// Pure: no DOM, no timers. The window (ui/gameboy-evolve-modal.ts) plays it.
+// Pure: no DOM, no timers. The window (ui/evolution-scene-modal.ts) plays it.
 
 /** Game Boy frame rate: about 59.73 frames a second. */
 export const GB_FRAME_MS = 1000 / 59.7275;
@@ -24,7 +24,7 @@ export const SWAP_FRAMES = 3;
 export const CYCLES = 8;
 
 /** The full Red/Blue sequence. Each cycle's swaps end on the old picture, as in the game. */
-export function gameBoyTimeline(): Step[] {
+export function evolutionTimeline(): Step[] {
 	const steps: Step[] = [{ kind: 'show', pic: 'old', silhouette: false, frames: INTRO_FRAMES }];
 	for (let b = 1, c = 16; c > 0; b++, c -= 2) {
 		steps.push({ kind: 'pause', pic: 'old', silhouette: true, frames: c });
