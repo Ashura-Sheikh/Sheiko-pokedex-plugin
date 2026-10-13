@@ -4,6 +4,8 @@ An Obsidian plugin that turns finishing tasks into catching Pokémon. Close task
 
 > **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and Pokémon names are trademarks of their respective owners. **This repository contains no Pokémon artwork.** By default every Pokémon is drawn as a coloured placeholder badge. Sprites are optional: you download them yourself from the plugin's settings (see [Sprites](#sprites-optional-downloaded-by-you)).
 
+**New here?** The [user guide](docs/USER-GUIDE.md) walks through what you'll see, with screenshots: your first catch, the Pokédex, a Pokémon's details, the status bar, evolution and sprites.
+
 ## Requirements
 
 - Obsidian desktop (the plugin is desktop only)
@@ -128,7 +130,12 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
 ## Sprites (optional, downloaded by you)
 
-This repository and its releases never contain Pokémon artwork, and tests enforce it: CI fails if an image file or embedded image data is ever committed, and the release workflow fails if `main.js` contains image data. Until you download sprites, every Pokémon is a coloured placeholder badge.
+This repository and its releases never contain Pokémon artwork, and tests enforce it:
+- CI fails if an image file is committed anywhere except as a PNG in `docs/images/`.
+- CI also fails if any committed PNG is 96×96 (a sprite's size), or if embedded image data is committed.
+- The release workflow fails if `main.js` contains image data.
+
+The user guide's screenshots in `docs/images/` show placeholder badges only. Until you download sprites, every Pokémon is a coloured placeholder badge.
 
 To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokédex → Sprites** and press **Download sprites**.
 
@@ -169,6 +176,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **Docs (no release):** a [user guide](docs/USER-GUIDE.md) with badge-only screenshots. The image tests now allow PNGs in `docs/images/` only, and fail on any committed PNG of sprite size.
 - **0.8.0:** sprites from a **Download sprites** button in settings: off by default, all-or-nothing, checked, saved in the plugin folder with its own `.gitignore`. Removes the build-time `npm run sprites`. The README credits for the sprites now say who owns them.
 - **0.7.2:** PokeAPI's BSD-3 licence notice for the bundled data, in the README and at the end of `main.js`. A test checks both.
 - **0.7.1:** licensed under MIT (code only; see Credits and licence).
