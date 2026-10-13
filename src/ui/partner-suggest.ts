@@ -34,18 +34,21 @@ export class PartnerSuggestModal extends FuzzySuggestModal<Species> {
 	}
 }
 
-/** Test tools: pick any of the 151 Gen 1 species. */
+/** Pick a species: from `only` (the Starter pack's uncaught ones), or all 151 when null (test tools). */
 export class SpeciesSuggestModal extends FuzzySuggestModal<Species> {
 	constructor(
 		app: App,
+		placeholder: string,
+		private only: number[] | null,
 		private onPick: (dex: number) => void,
 	) {
 		super(app);
-		this.setPlaceholder('Test: add which Pokémon?');
+		this.setPlaceholder(placeholder);
 	}
 
 	getItems(): Species[] {
-		return [...GEN1];
+		if (!this.only) return [...GEN1];
+		return this.only.map((dex) => speciesByDex(dex)).filter((s): s is Species => !!s);
 	}
 
 	getItemText(s: Species): string {

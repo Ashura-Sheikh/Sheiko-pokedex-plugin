@@ -39,8 +39,11 @@ const context = await esbuild.context({
 	logLevel: 'info',
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: 'main.js',
+	// SHEIKO_OUTFILE lets a test build a production bundle somewhere else without touching main.js.
+	outfile: process.env.SHEIKO_OUTFILE || 'main.js',
 	minify: prod,
+	// Development builds keep the unlimited test commands (src/dev-tools.ts); release builds drop them.
+	define: { __SHEIKO_DEV__: prod ? 'false' : 'true' },
 	// Keep /*! legal comments */ (PokeAPI's BSD-3 notice in src/data/gen1.ts) at the end of
 	// main.js, so release users get the notice. Explicit, not left to esbuild's default.
 	legalComments: 'eof',

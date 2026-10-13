@@ -19,7 +19,9 @@ import {
 } from './rarity';
 import {
 	DUPLICATE_BONUS_XP,
+	MAX_LEVEL,
 	Mon,
+	START_LEVEL,
 	STONE_CHANCE,
 	Stones,
 	addXp,
@@ -35,7 +37,10 @@ export interface Settings {
 	/** Catches per day. Closes after the limit is reached earn nothing and never pay out later. */
 	dailyCap: number;
 	showRewardWindow: boolean;
-	/** Test-only commands (give XP, stones, add a Pokémon). Off by default; for the test vault. */
+	/**
+	 * Unlimited test commands (give XP, stones, add a Pokémon). Development builds only (`npm run dev`):
+	 * release builds don't contain the commands or this setting. Off by default.
+	 */
 	testTools: boolean;
 	/** "context: type, type" per line. Parsed by parseContextTypes. */
 	contextTypes: string;
@@ -85,6 +90,28 @@ export interface CaughtEntry {
 	count: number;
 	firstAt: string;
 	lastAt: string;
+	/** 'starter' when it came from the Starter pack, not from a close. Absent for real catches. */
+	source?: 'starter';
+}
+
+/**
+ * Starter pack (Sheikh, 2026-10-13, 0.9.0): once per install, never refilled.
+ * `true` / a number above 0 means still available.
+ */
+export interface StarterPack {
+	/** One of each stone, claimed once. */
+	stones: boolean;
+	/** One uncaught Pokémon of the user's choice, legendaries included. */
+	pokemon: boolean;
+	/** Uses of STARTER_XP left for the partner. */
+	xpLeft: number;
+}
+
+export const STARTER_XP = 500;
+export const STARTER_XP_USES = 3;
+
+export function fullStarterPack(): StarterPack {
+	return { stones: true, pokemon: true, xpLeft: STARTER_XP_USES };
 }
 
 /** Progress toward the next catch. Kept overnight. */
@@ -115,6 +142,8 @@ export interface PokedexData {
 	stones: Stones;
 	/** When recent closes were seen (ISO), kept only as long as the bulk window. */
 	recentCloses: string[];
+	/** What's left of the one-time Starter pack. */
+	starter: StarterPack;
 }
 
 export function newProgress(installedAt: string, catches: number): Progress {
@@ -136,6 +165,21 @@ export function freshData(now: Date): PokedexData {
 		partner: null,
 		stones: noStones(),
 		recentCloses: [],
+		starter: fullStarterPack(),
+	};
+}
+
+/**
+ * Reads the saved Starter pack. Missing (data from 0.8.0 or earlier) = a full pack, so upgraders get
+ * it once. A saved pack is kept as saved, so reloads and setting changes never refill it.
+ */
+function normalizeStarter(raw: unknown): StarterPack {
+	if (!isRecord(raw)) return fullStarterPack();
+	const xp = typeof raw.xpLeft === 'number' && Number.isFinite(raw.xpLeft) ? Math.floor(raw.xpLeft) : 0;
+	return {
+		stones: raw.stones === true,
+		pokemon: raw.pokemon === true,
+		xpLeft: Math.min(STARTER_XP_USES, Math.max(0, xp)),
 	};
 }
 
@@ -208,7 +252,9 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 
 	const recentCloses = Array.isArray(raw.recentCloses) ? raw.recentCloses.filter((t): t is string => typeof t === 'string') : [];
 
-	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones, recentCloses };
+	const starter = normalizeStarter(raw.starter);
+
+	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones, recentCloses, starter };
 }
 
 /** Close counts can be halves since bulk closes get half credit: 3, 3.5. */
@@ -398,7 +444,7 @@ export function renamePath(data: PokedexData, oldPath: string, newPath: string):
 	return { ...data, ledger };
 }
 
-// ---------- Test tools (only reachable when settings.testTools is on) ----------
+// ---------- Test tools: development builds only (src/dev-tools.ts), when settings.testTools is on ----------
 
 /** Gives the partner XP directly, as if earned from closes. Null without a partner. */
 export function testGivePartnerXp(data: PokedexData, amount: number): { data: PokedexData; xp: XpGain | null } {
@@ -424,6 +470,73 @@ export function testAddPokemon(data: PokedexData, dex: number, now: Date): Poked
 		caught: { ...data.caught, [key]: prev ? { ...prev, count: prev.count + 1, lastAt: at } : { count: 1, firstAt: at, lastAt: at } },
 		mons: { ...data.mons, [key]: data.mons[key] ?? newMon() },
 	};
+}
+
+// ---------- Starter pack (Sheikh, 2026-10-13, 0.9.0): one-time per install ----------
+
+/** Why a Starter pack gift was refused. A refusal never uses anything up. */
+export type StarterRefusal = 'used' | 'no-partner' | 'max-level' | 'already-caught' | 'unknown';
+
+export type StarterResult = { ok: true; data: PokedexData; xp?: XpGain } | { ok: false; reason: StarterRefusal };
+
+/** What's left, for settings: "stones · 1 Pokémon · XP 2 of 3", or "nothing, all used". */
+export function starterSummary(p: StarterPack): string {
+	const parts: string[] = [];
+	if (p.stones) parts.push('stones');
+	if (p.pokemon) parts.push('1 Pokémon');
+	if (p.xpLeft > 0) parts.push(`XP ${p.xpLeft} of ${STARTER_XP_USES}`);
+	return parts.length ? parts.join(' · ') : 'nothing, all used';
+}
+
+/** Dex numbers the Starter pack can add: every Gen 1 species not caught yet. */
+export function starterChoices(data: PokedexData): number[] {
+	const out: number[] = [];
+	for (let dex = 1; speciesByDex(dex); dex++) if (!data.caught[String(dex)]) out.push(dex);
+	return out;
+}
+
+/** One of each stone, once. */
+export function claimStarterStones(data: PokedexData): StarterResult {
+	if (!data.starter.stones) return { ok: false, reason: 'used' };
+	const stones = { ...data.stones };
+	for (const k of STONE_KINDS) stones[k] += 1;
+	return { ok: true, data: { ...data, stones, starter: { ...data.starter, stones: false } } };
+}
+
+/**
+ * One uncaught Pokémon, once. It joins the Pokédex at level 5, marked `source: 'starter'`.
+ * Not a close and not a catch: no ledger, progress, daily or catch-total change.
+ */
+export function claimStarterPokemon(data: PokedexData, dex: number, now: Date): StarterResult {
+	if (!data.starter.pokemon) return { ok: false, reason: 'used' };
+	if (!speciesByDex(dex)) return { ok: false, reason: 'unknown' };
+	const key = String(dex);
+	if (data.caught[key]) return { ok: false, reason: 'already-caught' };
+	const at = now.toISOString();
+	return {
+		ok: true,
+		data: {
+			...data,
+			caught: { ...data.caught, [key]: { count: 1, firstAt: at, lastAt: at, source: 'starter' } },
+			mons: { ...data.mons, [key]: data.mons[key] ?? newMon() },
+			starter: { ...data.starter, pokemon: false },
+		},
+	};
+}
+
+/**
+ * STARTER_XP for the current partner, one use of STARTER_XP_USES. Refused, with nothing used up,
+ * when there's no partner or the partner is already at the top level (the XP would be lost).
+ */
+export function useStarterXp(data: PokedexData): StarterResult {
+	if (data.starter.xpLeft <= 0) return { ok: false, reason: 'used' };
+	if (data.partner === null) return { ok: false, reason: 'no-partner' };
+	const level = data.mons[String(data.partner)]?.level ?? START_LEVEL;
+	if (level >= MAX_LEVEL) return { ok: false, reason: 'max-level' };
+	const next: PokedexData = { ...data, mons: { ...data.mons } };
+	const xp = givePartnerXp(next, STARTER_XP);
+	if (!xp) return { ok: false, reason: 'no-partner' };
+	return { ok: true, data: { ...next, starter: { ...data.starter, xpLeft: data.starter.xpLeft - 1 } }, xp };
 }
 
 // ---------- Phase 3 actions (from the UI) ----------

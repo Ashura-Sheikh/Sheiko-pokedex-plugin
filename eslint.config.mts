@@ -28,6 +28,8 @@ export default defineConfig(
 		languageOptions: {
 			globals: {
 				...globals.browser,
+				// Set by esbuild.config.mjs (`define`); declared in src/build-flags.d.ts.
+				__SHEIKO_DEV__: 'readonly',
 			},
 			parserOptions: {
 				projectService: {

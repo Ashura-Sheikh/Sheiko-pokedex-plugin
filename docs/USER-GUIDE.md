@@ -13,6 +13,7 @@ A walk-through of what you'll see, from your first close to your first evolution
 5. [Your partner in the status bar](#5-your-partner-in-the-status-bar)
 6. [Evolution](#6-evolution)
 7. [Sprites (optional)](#7-sprites-optional)
+8. [Starter pack (once)](#8-starter-pack-once)
 
 ## 1. Install and enable
 
@@ -109,3 +110,15 @@ The settings explain each part before you press anything:
 - **Who owns them:** the artwork belongs to Nintendo / Game Freak. Keep it for your own use: don't commit, share or redistribute it.
 
 **Remove sprites** deletes them and brings the badges back. You can download them again at any time.
+
+## 8. Starter pack (once)
+
+Want a head start? Every install comes with a one-time **Starter pack**. Find it in **Settings → Sheiko Pokédex → Starter pack**, or as **Starter pack: …** commands.
+
+- **One of each stone:** a Fire, Water, Thunder, Leaf, Moon and Trade Stone.
+- **Choose a Pokémon:** pick any one you haven't caught yet, legendaries included. It joins your Pokédex at level 5.
+- **500 XP for your partner, 3 times:** each use goes to whoever is your partner at the time. Choose a partner first; with none, nothing is used.
+
+Each part asks **"This can only be used once. Use it now?"** before anything happens. Once used, it's gone for good on this install: updates and reloads don't refill it. The settings show what's left, and a used-up part's command disappears.
+
+<!-- screenshot needed: Settings → Starter pack, in badge mode -->
