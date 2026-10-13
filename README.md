@@ -159,6 +159,10 @@ To regenerate (needs `pokemon_species`, `pokemon_species_names`, `pokemon_types`
 python3 -I scripts/build_gen1_data.py <folder with the CSV files>
 ```
 
+## Support
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs and open pull requests. Best effort. Report issues on [GitHub](https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin/issues). No response-time guarantee. Developed against TaskNotes 4.13.8 and Sheiko Task Lifecycle 0.2.2.
+
 ## Development
 
 ```
@@ -179,6 +183,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **Docs (no release):** `CONTRIBUTING.md` (bugs, features, pull requests, and the no-artwork rules) and a *Support* section.
 - **0.9.1:** the sprite save is all-or-nothing (a temporary folder, moved into place only when complete). The Starter pack's XP confirmation no longer repeats itself. The evolution scene is now called the **Evolution scene** (it was the "Game Boy evolution scene").
 - **0.9.0:** the **Starter pack**: once per install, one of each stone, one uncaught Pokémon of your choice (marked as from the Starter pack) and 500 XP three times, each asked first and never refilled. The unlimited test tools are now in development builds only.
 - **Docs (no release):** a [user guide](docs/USER-GUIDE.md) with badge-only screenshots. The image tests now allow PNGs in `docs/images/` only, and fail on any committed PNG of sprite size.
