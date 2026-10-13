@@ -1,4 +1,4 @@
-// Reads TaskNotes' own configuration so the Pokédex follows it instead of hardcoding
+// Reads TaskNotes' own configuration so the Pokedex follows it instead of hardcoding
 // status names or field names. Only reads; never writes TaskNotes' settings.
 
 import { App, TFile, normalizePath } from 'obsidian';
@@ -80,7 +80,7 @@ const str = (v: unknown, fallback: string): string => (typeof v === 'string' && 
 /**
  * Reads `.obsidian/plugins/tasknotes/{data,manifest}.json` from disk.
  * `found` is true only when TaskNotes is installed AND enabled (listed in
- * `community-plugins.json`). When it's false, the Pokédex does nothing.
+ * `community-plugins.json`). When it's false, the Pokedex does nothing.
  */
 export async function loadTaskNotesConfig(app: App): Promise<TaskNotesConfig> {
 	const dir = normalizePath(`${app.vault.configDir}/plugins/tasknotes`);
@@ -128,7 +128,7 @@ export async function loadTaskNotesConfig(app: App): Promise<TaskNotesConfig> {
 			},
 		};
 	} catch (e) {
-		console.error('[Sheiko Pokédex] Could not read TaskNotes config, using defaults', e);
+		console.error('[Sheiko Pokedex] Could not read TaskNotes config, using defaults', e);
 		return FALLBACK;
 	}
 }

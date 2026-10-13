@@ -1,4 +1,4 @@
-# Sheiko Pokédex: user guide
+# Sheiko Pokedex: user guide
 
 A walk-through of what you'll see, from your first close to your first evolution. For the rules behind each step (odds, XP, limits), see the [README](../README.md).
 
@@ -8,7 +8,7 @@ A walk-through of what you'll see, from your first close to your first evolution
 
 1. [Install and enable](#1-install-and-enable)
 2. [Close a task, catch a Pokémon](#2-close-a-task-catch-a-pokémon)
-3. [The Pokédex view](#3-the-pokédex-view)
+3. [The Pokedex view](#3-the-pokedex-view)
 4. [A Pokémon's details](#4-a-pokémons-details)
 5. [Your partner in the status bar](#5-your-partner-in-the-status-bar)
 6. [Evolution](#6-evolution)
@@ -17,17 +17,17 @@ A walk-through of what you'll see, from your first close to your first evolution
 
 ## 1. Install and enable
 
-You need Obsidian desktop with [TaskNotes](https://github.com/callumalpass/tasknotes) and [Sheiko Task Lifecycle](https://github.com/Ashura-Sheikh/Sheiko-obsidian-plugin) enabled. Follow [Install](../README.md#install) in the README, then turn on **Sheiko Pokédex** in **Settings → Community plugins**.
+You need Obsidian desktop with [TaskNotes](https://github.com/callumalpass/tasknotes) and [Sheiko Task Lifecycle](https://github.com/Ashura-Sheikh/Sheiko-obsidian-plugin) enabled. Follow [Install](../README.md#install) in the README, then turn on **Sheiko Pokedex** in **Settings → Community plugins**.
 
 If either required plugin is missing, a notice tells you, and closes won't earn Pokémon until it's enabled.
 
-![Settings → Community plugins with Sheiko Pokédex v1.0.0 installed and enabled](images/install-plugins.png)
+![Settings → Community plugins with Sheiko Pokedex v1.0.0 installed and enabled](images/install-plugins.png)
 
 ## 2. Close a task, catch a Pokémon
 
 Close tasks in TaskNotes as you normally do. While Obsidian is running, each counted close shows a short notice:
 
-> Sheiko Pokédex: close 3 toward your next catch
+> Sheiko Pokedex: close 3 toward your next catch
 
 The number of closes needed is hidden and changes after every catch (somewhere from 4 to 7). When you reach it, the **reward window** opens:
 
@@ -36,15 +36,15 @@ The number of closes needed is hidden and changes after every catch (somewhere f
 - why you got that rarity: how many closes were in the batch, their average score, any daily boost, and the final score out of 8
 - your partner's XP, and "grew to Lv …!" or "Learned …!" when it levels up
 - "You found a … Stone!" when the catch also finds a stone
-- **Open Pokédex** or **Nice**
+- **Open Pokedex** or **Nice**
 
 Prefer something quieter? Turn off **Show reward window** in the plugin's settings to get a short notice instead.
 
 ![The reward window: Jolteon caught, the batch's closes, average and score out of 8, and the partner's XP](images/reward-window.png)
 
-## 3. The Pokédex view
+## 3. The Pokedex view
 
-Open it from the ribbon icon (**Open Pokédex**), from the **Open Pokédex** command, or with **Open Pokédex** in the reward window.
+Open it from the ribbon icon (**Open Pokedex**), from the **Open Pokedex** command, or with **Open Pokedex** in the reward window.
 
 - **Partner card** at the top: your partner with its level and XP bar, its current moves, its next move and what it evolves into. **Details** opens its full page; **Change partner** picks another.
 - **Stats:** species caught out of 151, total catches, catches and closes today, progress toward the next catch, and how many of each rarity you've caught.
@@ -53,7 +53,7 @@ Open it from the ribbon icon (**Open Pokédex**), from the **Open Pokédex** com
 
 You won't have a partner at first. Choose one with **Choose partner** in the view, the **Choose partner** command, or **Make partner** on any Pokémon you've caught. Only your partner earns XP.
 
-![The Pokédex view: the partner card, the stats and stones rows, and the start of the grid](images/pokedex-view.png)
+![The Pokedex view: the partner card, the stats and stones rows, and the start of the grid](images/pokedex-view.png)
 
 ## 4. A Pokémon's details
 
@@ -74,8 +74,8 @@ Your partner sits in Obsidian's status bar, for example "Charmeleon Lv 18".
 ![Hovering over the partner in the status bar shows its level and XP](images/status-bar-hover.png)
 
 - **Hover** to see its XP, and whether an evolution is waiting.
-- **Click** to open the Pokédex, or to choose a partner if you haven't yet.
-- **Right-click** for a short menu: **Open Pokédex**, **Choose partner** and, once your partner has reached its evolution level, **Evolve now**.
+- **Click** to open the Pokedex, or to choose a partner if you haven't yet.
+- **Right-click** for a short menu: **Open Pokedex**, **Choose partner** and, once your partner has reached its evolution level, **Evolve now**.
 
 ![Right-clicking the partner in the status bar](images/status-bar-menu.png)
 
@@ -85,7 +85,7 @@ Your partner sits in Obsidian's status bar, for example "Charmeleon Lv 18".
 
 - To stop it, press **B**, press **Stop**, or close the window. You'll be asked again at the next level, or any time with **Evolve now** in the status-bar menu.
 - If you let it finish, the evolved form takes over as your partner, keeping its level.
-- **Both forms stay caught** in your Pokédex.
+- **Both forms stay caught** in your Pokedex.
 - **Calm evolution scene** in the settings replaces the flicker with a slow fade. It's also used automatically when your system asks for reduced motion.
 
 ![The Evolution scene in badge mode: CATERPIE evolved into METAPOD](images/evolution-scene.png)
@@ -94,11 +94,11 @@ Your partner sits in Obsidian's status bar, for example "Charmeleon Lv 18".
 
 ![Using a Thunder Stone on Eevee: confirm before it evolves](images/stone-evolution.png)
 
-Press **Evolve** and the same Evolution scene plays. As in the game, a stone evolution can't be stopped once it starts. The stone is used up, and both forms stay in your Pokédex.
+Press **Evolve** and the same Evolution scene plays. As in the game, a stone evolution can't be stopped once it starts. The stone is used up, and both forms stay in your Pokedex.
 
 ## 7. Sprites (optional)
 
-Out of the box, every Pokémon is a placeholder badge, and the plugin makes no network requests. To see the classic pixel sprites instead, go to **Settings → Sheiko Pokédex → Sprites** and press **Download sprites**.
+Out of the box, every Pokémon is a placeholder badge, and the plugin makes no network requests. To see the classic pixel sprites instead, go to **Settings → Sheiko Pokedex → Sprites** and press **Download sprites**.
 
 ![The Sprites section in the plugin's settings, after a download](images/settings-sprites.png)
 
@@ -114,10 +114,10 @@ The settings explain each part before you press anything:
 
 ## 8. Starter pack (once)
 
-Want a head start? Every install comes with a one-time **Starter pack**. Find it in **Settings → Sheiko Pokédex → Starter pack**, or as **Starter pack: …** commands.
+Want a head start? Every install comes with a one-time **Starter pack**. Find it in **Settings → Sheiko Pokedex → Starter pack**, or as **Starter pack: …** commands.
 
 - **One of each stone:** a Fire, Water, Thunder, Leaf, Moon and Trade Stone.
-- **Choose a Pokémon:** pick any one you haven't caught yet, legendaries included. It joins your Pokédex at level 5.
+- **Choose a Pokémon:** pick any one you haven't caught yet, legendaries included. It joins your Pokedex at level 5.
 - **500 XP for your partner, 3 times:** each use goes to whoever is your partner at the time. Choose a partner first; with none, nothing is used.
 
 Each part asks **"This can only be used once. Use it now?"** before anything happens. Once used, it's gone for good on this install: updates and reloads don't refill it. The settings show what's left, and a used-up part's command disappears.

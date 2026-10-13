@@ -1,5 +1,5 @@
 // Saved state and the reward decision. Pure: takes data in, returns new data out.
-// The Pokédex never writes to task notes; everything lives in the plugin's own data.json.
+// The Pokedex never writes to task notes; everything lives in the plugin's own data.json.
 //
 // 0.2.0 (Sheikh, 2026-10-12): a catch comes every 4-7 counted closes (hidden target).
 // Rarity uses the average score of the closes since the last catch, plus a daily
@@ -459,7 +459,7 @@ export function testGiveEachStone(data: PokedexData): PokedexData {
 	return { ...data, stones };
 }
 
-/** Adds a Pokémon to the Pokédex without a close (no ledger, progress or daily change). */
+/** Adds a Pokémon to the Pokedex without a close (no ledger, progress or daily change). */
 export function testAddPokemon(data: PokedexData, dex: number, now: Date): PokedexData {
 	if (!speciesByDex(dex)) return data;
 	const key = String(dex);
@@ -513,7 +513,7 @@ export function claimStarterStones(data: PokedexData): StarterResult {
 }
 
 /**
- * One uncaught Pokémon, once. It joins the Pokédex at level 5, marked `source: 'starter'`.
+ * One uncaught Pokémon, once. It joins the Pokedex at level 5, marked `source: 'starter'`.
  * Not a close and not a catch: no ledger, progress, daily or catch-total change.
  */
 export function claimStarterPokemon(data: PokedexData, dex: number, now: Date): StarterResult {

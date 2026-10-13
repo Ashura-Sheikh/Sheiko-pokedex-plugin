@@ -1,4 +1,4 @@
-/* Sheiko Pokédex. Placeholder art only: coloured badges, no sprites. */
+/* Sheiko Pokedex. Placeholder art only: coloured badges, no sprites. */
 
 .sheiko-pokedex-badge {
 	display: flex;
@@ -40,7 +40,7 @@
 .sheiko-pokedex-tier.tier-legendary { color: #c8901a; }
 .sheiko-pokedex-dup { font-size: var(--font-ui-small); }
 
-/* Pokédex view */
+/* Pokedex view */
 .sheiko-pokedex-view { padding: var(--size-4-4); }
 .sheiko-pokedex-stats { display: flex; flex-wrap: wrap; gap: var(--size-4-2); margin-bottom: var(--size-4-4); }
 .sheiko-pokedex-stat {

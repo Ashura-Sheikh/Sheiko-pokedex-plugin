@@ -74,7 +74,7 @@ export async function downloadSprites(deps: DownloadDeps): Promise<DownloadResul
 
 /** Written next to the sprites so a vault kept in git doesn't commit them. */
 export const SPRITES_GITIGNORE =
-	'# Sheiko Pokédex sprites: downloaded for your own use, not for redistribution. Do not commit.\n*\n';
+	'# Sheiko Pokedex sprites: downloaded for your own use, not for redistribution. Do not commit.\n*\n';
 
 /** The file operations the save needs; Obsidian's DataAdapter has all of them. */
 export interface SpriteFs {

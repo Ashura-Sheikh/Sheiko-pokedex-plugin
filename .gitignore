@@ -27,7 +27,7 @@ data.json
 # test build output
 test-dist/
 
-# This folder doubles as the Pokédex test vault: keep its notes out of git
+# This folder doubles as the Pokedex test vault: keep its notes out of git
 TaskNotes/
 Screenshots for this Vault/
 

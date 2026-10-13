@@ -35,8 +35,8 @@ export class EvolveModal extends Modal {
 		contentEl.createEl('p', {
 			cls: 'sheiko-pokedex-why',
 			text: this.stone
-				? 'The stone is used up. Both forms stay in your Pokédex.'
-				: 'Cancel to stay as you are. You will be asked again at the next level. Both forms stay in your Pokédex.',
+				? 'The stone is used up. Both forms stay in your Pokedex.'
+				: 'Cancel to stay as you are. You will be asked again at the next level. Both forms stay in your Pokedex.',
 		});
 		const buttons = contentEl.createDiv({ cls: 'modal-button-container' });
 		buttons.createEl('button', { text: 'Cancel' }).addEventListener('click', () => this.decide(false));
