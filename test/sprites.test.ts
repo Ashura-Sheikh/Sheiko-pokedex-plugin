@@ -1,5 +1,5 @@
-// Sprites. S1 (Sheikh 2026-10-12): no art is ever committed; CI fails if image files or embedded
-// PNG data end up tracked by git. DB (Sheikh 2026-10-13): users download sprites from settings;
+// Sprites. S1 (Sheikh 2026-10-12): no art is ever committed; CI fails if image files (outside the
+// user guide's badge-only screenshots) or embedded PNG data end up tracked by git. DB (Sheikh 2026-10-13): users download sprites from settings;
 // the download is checked here with fake network responses, so no real images are involved.
 
 import { test } from 'node:test';
@@ -34,9 +34,25 @@ test('no sprites until some are loaded: badges by default', () => {
 	assert.equal(spriteFor(25), null);
 });
 
-test('no image files are tracked by git', () => {
+// User guide (Sheikh 2026-10-13): screenshots are allowed, but only as PNGs in docs/images/, and only
+// in placeholder-badge mode, with no sprites showing. That last part is a review rule, not something a
+// test can see; the size check below catches the most likely slip, a sprite file itself.
+const GUIDE_IMAGES = 'docs/images/';
+
+test('image files are tracked only as PNG screenshots in docs/images/', () => {
 	const images = tracked().filter((f) => /\.(png|gif|jpe?g|webp|bmp|ico)$/i.test(f));
-	assert.deepEqual(images, []);
+	const outside = images.filter((f) => !(f.startsWith(GUIDE_IMAGES) && /\.png$/i.test(f)));
+	assert.deepEqual(outside, []);
+});
+
+test('no tracked PNG has a sprite size (96×96)', () => {
+	const sized = tracked()
+		.filter((f) => /\.png$/i.test(f))
+		.filter((f) => {
+			const b = readFileSync(root + f);
+			return b.length >= 24 && b.readUInt32BE(16) === 96 && b.readUInt32BE(20) === 96;
+		});
+	assert.deepEqual(sized, []);
 });
 
 test('no embedded PNG data is tracked by git', () => {
