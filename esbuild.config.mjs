@@ -47,6 +47,9 @@ const context = await esbuild.context({
 	treeShaking: true,
 	outfile: 'main.js',
 	minify: prod,
+	// Keep /*! legal comments */ (PokeAPI's BSD-3 notice in src/data/gen1.ts) at the end of
+	// main.js, so release users get the notice. Explicit, not left to esbuild's default.
+	legalComments: 'eof',
 });
 
 if (prod) {
