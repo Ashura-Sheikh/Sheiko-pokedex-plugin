@@ -179,30 +179,9 @@ npm run lint
 
 **CI:** `.github/workflows/ci.yml` runs build, lint and test on Node 20, 22 and 24 for every pull request into `main` and every push to `main`.
 
-**Releases:** pushing a version tag (e.g. `0.7.1`) runs `.github/workflows/release.yml`. It checks the tag matches `manifest.json`, builds and tests, **fails if `main.js` contains any image data**, and creates a draft release with the 3 files. Build provenance is added once the repo is public.
+**Releases:** pushing a version tag (e.g. `1.0.1`) runs `.github/workflows/release.yml`. It checks the tag matches `manifest.json`, builds and tests, **fails if `main.js` contains any image data**, and creates a draft release titled `v<tag>` with the 3 files. Runs for the same tag queue one at a time, and no second draft is made if a release for the tag already exists. Build provenance is added once the repo is public. Each release's notes are on its GitHub release page.
 
 If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, `TaskNotes/` and screenshot folders are git-ignored.
-
-## Changelog
-
-- **1.0.1:** the plugin's name is now **Sheiko Pokedex**, without the accent, matching its ID (`sheiko-pokedex`). "Pokedex" is spelled the same throughout the app and docs. The ID is unchanged, so your data, sprites and settings stay where they are.
-- **Docs (no release):** the install screenshot shows v1.0.0, in the README's *Install* and the user guide.
-- **1.0.0:** first stable release. The plugin is the same as 0.9.1; since then the repo has added `CONTRIBUTING.md`, a *Support* section and a test that the README reproduces PokeAPI's notice.
-- **Docs (no release):** `CONTRIBUTING.md` (bugs, features, pull requests, and the no-artwork rules) and a *Support* section.
-- **0.9.1:** the sprite save is all-or-nothing (a temporary folder, moved into place only when complete). The Starter pack's XP confirmation no longer repeats itself. The evolution scene is now called the **Evolution scene** (it was the "Game Boy evolution scene").
-- **0.9.0:** the **Starter pack**: once per install, one of each stone, one uncaught Pokémon of your choice (marked as from the Starter pack) and 500 XP three times, each asked first and never refilled. The unlimited test tools are now in development builds only.
-- **Docs (no release):** a [user guide](docs/USER-GUIDE.md) with badge-only screenshots. The image tests now allow PNGs in `docs/images/` only, and fail on any committed PNG of sprite size.
-- **0.8.0:** sprites from a **Download sprites** button in settings: off by default, all-or-nothing, checked, saved in the plugin folder with its own `.gitignore`. Removes the build-time `npm run sprites`. The README credits for the sprites now say who owns them.
-- **0.7.2:** PokeAPI's BSD-3 licence notice for the bundled data, in the README and at the end of `main.js`. A test checks both.
-- **0.7.1:** licensed under MIT (code only; see Credits and licence).
-- **0.7.0:** the Game Boy evolution scene: Red/Blue timing and text on an original green screen, B to stop, unstoppable stone evolutions, and a calm mode without flicker.
-- **0.6.1:** the partner is the main visual: a large card at the top of the Pokédex with a 2× sprite, level and XP, current moves, next move and what it evolves into, plus Details and Change partner.
-- **0.6.0:** optional local sprites (fetched by `npm run sprites`, never committed; silhouettes for unseen Pokémon). The README is written for a public audience.
-- **0.5.0:** bulk-close rule: more than 50 closes within 6 minutes → half credit for the rest of the burst.
-- **0.4.0:** Red/Blue level-up moves (current 4 under each card, full list in the detail window, "Learned …!" on level-ups), plus status-bar hover, click and right-click.
-- **0.3.0:** partner, per-Pokémon levels and XP, evolution prompts (asked first, re-asked a level later after Cancel), earned stones including the Trade Stone, and the partner in the status bar. Saved 0.2.0 data is migrated: every caught species starts at level 5, with no partner and no stones.
-- **0.2.0:** a catch every 4–7 closes (hidden target), rarity from the batch average plus a daily boost, limit 3 catches a day, and date-only `completedDate` handled. Saved 0.1.0 data is migrated.
-- **0.1.0:** first working version: close detection, rarity draw, reward window, Pokédex view.
 
 ## Known limits
 
