@@ -2,7 +2,7 @@
 
 An Obsidian plugin that turns finishing tasks into catching Pokémon. Close tasks in [TaskNotes](https://github.com/callumalpass/tasknotes) and catch a random Gen 1 Pokémon every 4–7 closes; the more you close in a day, the better your odds. Pick a partner, level it up from your work, evolve it, and fill your Pokédex.
 
-> **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and Pokémon names are trademarks of their respective owners. **This repository contains no Pokémon artwork.** By default every Pokémon is drawn as a coloured placeholder badge. Sprites are optional and fetched on your own machine (see [Sprites](#sprites-optional-local-only)).
+> **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and Pokémon names are trademarks of their respective owners. **This repository contains no Pokémon artwork.** By default every Pokémon is drawn as a coloured placeholder badge. Sprites are optional: you download them yourself from the plugin's settings (see [Sprites](#sprites-optional-downloaded-by-you)).
 
 ## Requirements
 
@@ -20,25 +20,24 @@ Not in the Obsidian community directory. Install by hand, using one of these two
 2. Create the folder `<your vault>/.obsidian/plugins/sheiko-pokedex/` and put the 3 files in it.
 3. In Obsidian, go to **Settings → Community plugins**, refresh the list, and enable **Sheiko Pokédex**.
 
-Release builds show every Pokémon as a **coloured placeholder badge**. They never contain sprites; the release workflow fails if one ever would.
+Every Pokémon shows as a **coloured placeholder badge** until you choose to download sprites in the plugin's settings. See [Sprites](#sprites-optional-downloaded-by-you). Releases never contain sprites; the release workflow fails if one ever would.
 
-### Option 2: build from source (needed for sprites)
+### Option 2: build from source
 
-You need [Node.js](https://nodejs.org/) and Python 3.
+You need [Node.js](https://nodejs.org/).
 
 ```
 git clone https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin.git
 cd Sheiko-pokedex-plugin
 npm install
-npm run sprites   # optional: fetch the 151 sprites into a local, git-ignored file (needs internet)
-npm run build     # prints "Sprites: local file (sprites included)" if you fetched them
+npm run build
 ```
 
-Then copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/plugins/sheiko-pokedex/` and enable the plugin as in option 1. Builds that include sprites are for your own use only; don't share or redistribute them. See [Sprites](#sprites-optional-local-only).
+Then copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/plugins/sheiko-pokedex/` and enable the plugin as in option 1.
 
 ### Either way
 
-If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitignore`. That keeps your catch data, and any sprites inside `main.js`, out of your vault's history.
+If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitignore`. That keeps your catch data out of your vault's history. Downloaded sprites have their own `.gitignore` as well.
 
 ## How a catch works
 
@@ -127,22 +126,19 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
 
   Leave the setting off for real use.
 
-## Sprites (optional, local only)
+## Sprites (optional, downloaded by you)
 
-This repository never contains Pokémon artwork, and a test enforces it: CI fails if an image file or embedded image data is ever committed. Builds from a fresh clone, including CI, use coloured placeholder badges.
+This repository and its releases never contain Pokémon artwork, and tests enforce it: CI fails if an image file or embedded image data is ever committed, and the release workflow fails if `main.js` contains image data. Until you download sprites, every Pokémon is a coloured placeholder badge.
 
-To see the classic 96×96 pixel sprites in your own install:
+To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokédex → Sprites** and press **Download sprites**.
 
-```
-npm run sprites   # writes src/data/sprites.local.ts (git-ignored)
-npm run build     # prints "Sprites: local file (sprites included)"
-```
-
-- **Where they come from:** `scripts/fetch_sprites.py` downloads the 151 Gen 1 sprites from the [PokeAPI sprites repository](https://github.com/PokeAPI/sprites). Each download is checked: it must be a PNG, 96×96 and under 64 KB. The sprites are written into the git-ignored `src/data/sprites.local.ts`.
-- **What the build does with them:** when that file exists, the build bundles it into your local `main.js`; otherwise it uses an empty map.
+- **Off by default.** Nothing is downloaded until you press the button. The plugin makes no other network requests.
+- **The network call:** 151 requests, one at a time with a short pause, to `raw.githubusercontent.com`, for the default sprites in [PokeAPI's sprite repository](https://github.com/PokeAPI/sprites) (`sprites/pokemon/1.png` to `151.png`). It takes about half a minute.
+- **Checks:** each image must be a PNG, 96×96 and under 64 KB. All 151 are downloaded and checked before anything is saved. If the source can't be reached or any image fails a check, nothing is saved and the badges stay.
+- **Where they're saved:** `<your vault>/.obsidian/plugins/sheiko-pokedex/sprites/` (`001.png` to `151.png`), with a `.gitignore` that ignores the whole folder. They're checked again each time Obsidian loads them.
+- **Who owns them:** the artwork belongs to Nintendo / Game Freak. It is not covered by this plugin's licence or PokeAPI's. **Sprites are for your own use: don't commit, share or redistribute them.**
+- **To go back to badges,** press **Remove sprites** in the same place. That deletes the folder.
 - **Unseen Pokémon** show as black silhouettes.
-- **To go back to badges,** delete the local file and rebuild.
-- **Sprites are for your own use.** Don't commit or redistribute builds that include them.
 
 ## Data
 
@@ -161,7 +157,7 @@ python3 -I scripts/build_gen1_data.py <folder with the CSV files>
 ```
 npm install
 npm run build   # type-check + bundle to main.js
-npm test        # Node's built-in test runner, obsidian mocked; never uses local sprites
+npm test        # Node's built-in test runner, obsidian mocked; no network, no real images
 npm run lint
 ```
 
@@ -173,6 +169,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **0.8.0:** sprites from a **Download sprites** button in settings: off by default, all-or-nothing, checked, saved in the plugin folder with its own `.gitignore`. Removes the build-time `npm run sprites`. The README credits for the sprites now say who owns them.
 - **0.7.2:** PokeAPI's BSD-3 licence notice for the bundled data, in the README and at the end of `main.js`. A test checks both.
 - **0.7.1:** licensed under MIT (code only; see Credits and licence).
 - **0.7.0:** the Game Boy evolution scene: Red/Blue timing and text on an original green screen, B to stop, unstoppable stone evolutions, and a calm mode without flicker.
@@ -192,11 +189,12 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Credits and licence
 
-- Pokémon data (names, types, evolutions, moves) and the optional sprites come from [PokeAPI](https://pokeapi.co/).
+- Pokémon data (names, types, evolutions, moves) comes from [PokeAPI](https://pokeapi.co/). The optional sprites are downloaded from [PokeAPI's sprite repository](https://github.com/PokeAPI/sprites).
 - Built to work alongside [TaskNotes](https://github.com/callumalpass/tasknotes) and [Sheiko Task Lifecycle](https://github.com/Ashura-Sheikh/Sheiko-obsidian-plugin).
 - **Licence:** [MIT](LICENSE), © 2026 Sheikh M Sahil. It covers this plugin's own code and documentation.
   - It doesn't cover Pokémon names, move names or other Pokémon content. Those belong to their owners and aren't licensed by this project.
-  - It doesn't cover the PokeAPI-derived data or the optional sprites, which come under PokeAPI's own terms. PokeAPI's licence for the data is reproduced under [Third-party notices](#third-party-notices).
+  - It doesn't cover the PokeAPI-derived data, which comes under PokeAPI's own licence, reproduced under [Third-party notices](#third-party-notices).
+  - It doesn't cover the sprites. Their artwork belongs to Nintendo / Game Freak; PokeAPI's sprite repository says so too ("All image contents within are Copyright The Pokémon Company"). The plugin never ships them; you download them for your own use.
 
 ## Third-party notices
 

@@ -1,4 +1,4 @@
-import { Menu, Notice, Plugin, PluginSettingTab, Setting, TFile, App } from 'obsidian';
+import { Menu, Notice, Plugin, PluginSettingTab, Setting, TFile, App, normalizePath, requestUrl } from 'obsidian';
 import { parseContextTypes } from './rarity';
 import {
 	CloseInput,
@@ -33,6 +33,8 @@ import { EvolveModal } from './ui/evolve-modal';
 import { GameBoyEvolveModal } from './ui/gameboy-evolve-modal';
 import { DetailModal } from './ui/detail-modal';
 import { PartnerSuggestModal, SpeciesSuggestModal } from './ui/partner-suggest';
+import { setSprites } from './ui/art';
+import { SPRITES_GITIGNORE, SPRITE_COUNT, checkSprite, downloadSprites, spriteFileName } from './sprites';
 
 export default class SheikoPokedexPlugin extends Plugin {
 	data!: PokedexData;
@@ -44,6 +46,11 @@ export default class SheikoPokedexPlugin extends Plugin {
 	private windowTimer: number | null = null;
 	private warnedNoSheiko = false;
 	private statusBar: HTMLElement | null = null;
+	/** blob: URLs for the downloaded sprites; revoked when replaced or on unload. */
+	private spriteUrls: string[] = [];
+	/** True while "Download sprites" runs. */
+	spriteDownloadRunning = false;
+	private unloading = false;
 
 	async onload(): Promise<void> {
 		this.data = normalizeData(await this.loadData(), new Date());
@@ -73,6 +80,9 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.statusBar.addEventListener('contextmenu', (e) => this.showStatusBarMenu(e));
 		this.updateStatusBar();
 
+		// Downloaded sprites, if the user fetched them earlier (DB). Badges until then.
+		void this.loadSprites();
+
 		this.watcher = new Watcher({
 			app: this.app,
 			onClose: (input, file) => this.enqueue(() => this.handleClose(input, file)),
@@ -97,6 +107,8 @@ export default class SheikoPokedexPlugin extends Plugin {
 	}
 
 	onunload(): void {
+		this.unloading = true;
+		this.clearSpriteUrls();
 		this.watcher?.stop();
 		if (this.windowTimer !== null) window.clearInterval(this.windowTimer);
 	}
@@ -417,6 +429,102 @@ export default class SheikoPokedexPlugin extends Plugin {
 		await this.saveData(this.data);
 		this.refreshViews();
 	}
+
+	// --- Sprites (DB, Sheikh 2026-10-13). Off by default; downloaded only when the user asks. ---
+
+	/** This plugin's own folder: <config>/plugins/<id>/sprites. Never part of the repo or a release. */
+	spritesDir(): string {
+		const pluginDir = this.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.manifest.id}`;
+		return normalizePath(`${pluginDir}/sprites`);
+	}
+
+	/** How many sprites are loaded right now (0 = badges). */
+	spritesLoaded(): number {
+		return this.spriteUrls.length;
+	}
+
+	private clearSpriteUrls(): void {
+		setSprites(new Map());
+		for (const url of this.spriteUrls) URL.revokeObjectURL(url);
+		this.spriteUrls = [];
+	}
+
+	/** Loads the saved sprites. All 151 must be there and pass the checks, or it stays on badges. */
+	async loadSprites(): Promise<boolean> {
+		const adapter = this.app.vault.adapter;
+		const dir = this.spritesDir();
+		this.clearSpriteUrls();
+		try {
+			if (!(await adapter.exists(dir))) return false;
+			const urls = new Map<number, string>();
+			for (let dex = 1; dex <= SPRITE_COUNT; dex++) {
+				const path = `${dir}/${spriteFileName(dex)}`;
+				if (!(await adapter.exists(path))) throw new Error(`missing ${spriteFileName(dex)}`);
+				const bytes = new Uint8Array(await adapter.readBinary(path));
+				const problem = checkSprite(bytes);
+				if (problem) throw new Error(`${spriteFileName(dex)}: ${problem}`);
+				urls.set(dex, URL.createObjectURL(new Blob([bytes], { type: 'image/png' })));
+			}
+			if (this.unloading) {
+				for (const url of urls.values()) URL.revokeObjectURL(url);
+				return false;
+			}
+			this.spriteUrls = [...urls.values()];
+			setSprites(urls);
+			return true;
+		} catch (e) {
+			console.warn('[Sheiko Pokédex] Saved sprites not used, showing badges:', e);
+			this.clearSpriteUrls();
+			return false;
+		} finally {
+			this.refreshViews();
+			this.updateStatusBar();
+		}
+	}
+
+	/** Downloads all 151 sprites, checks them, then saves them. On any failure nothing is saved. */
+	async downloadAndSaveSprites(onProgress: (done: number, total: number) => void): Promise<void> {
+		if (this.spriteDownloadRunning) return;
+		this.spriteDownloadRunning = true;
+		try {
+			const result = await downloadSprites({
+				fetchBytes: async (url) => (await requestUrl({ url, throw: true })).arrayBuffer,
+				sleep: (ms) => new Promise((r) => window.setTimeout(r, ms)),
+				onProgress,
+				cancelled: () => this.unloading,
+			});
+			if (!result.ok) {
+				new Notice(`Sheiko Pokédex: sprites not downloaded. ${result.error} Placeholder badges stay.`, 10000);
+				return;
+			}
+			const adapter = this.app.vault.adapter;
+			const dir = this.spritesDir();
+			if (!(await adapter.exists(dir))) await adapter.mkdir(dir);
+			await adapter.write(`${dir}/.gitignore`, SPRITES_GITIGNORE);
+			for (const [dex, bytes] of result.sprites) {
+				const copy = bytes.slice(); // its own ArrayBuffer, exactly the PNG's bytes
+				await adapter.writeBinary(`${dir}/${spriteFileName(dex)}`, copy.buffer);
+			}
+			const ok = await this.loadSprites();
+			new Notice(ok ? `Sheiko Pokédex: ${SPRITE_COUNT} sprites downloaded.` : 'Sheiko Pokédex: sprites saved but could not be loaded. See the console.');
+		} catch (e) {
+			console.error('[Sheiko Pokédex] Sprite download failed:', e);
+			new Notice('Sheiko Pokédex: sprites not downloaded. Placeholder badges stay.', 10000);
+		} finally {
+			this.spriteDownloadRunning = false;
+		}
+	}
+
+	/** Deletes the sprite folder and goes back to badges. */
+	async removeSprites(): Promise<void> {
+		const adapter = this.app.vault.adapter;
+		const dir = this.spritesDir();
+		this.clearSpriteUrls();
+		if (await adapter.exists(dir)) await adapter.rmdir(dir, true);
+		this.refreshViews();
+		this.updateStatusBar();
+		new Notice('Sheiko Pokédex: sprites removed. Placeholder badges are back.');
+	}
 }
 
 class PokedexSettingTab extends PluginSettingTab {
@@ -502,6 +610,8 @@ class PokedexSettingTab extends PluginSettingTab {
 				}),
 			);
 
+		this.displaySprites(containerEl);
+
 		new Setting(containerEl)
 			.setName('Test tools')
 			.setDesc(
@@ -525,5 +635,43 @@ class PokedexSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				});
 			});
+	}
+
+	/** Sprites (DB): states the network call and the source before anything is fetched. */
+	private displaySprites(containerEl: HTMLElement): void {
+		const loaded = this.plugin.spritesLoaded();
+		new Setting(containerEl).setName('Sprites').setHeading();
+		containerEl.createEl('p', {
+			cls: 'setting-item-description',
+			text:
+				'Optional. Pressing Download makes 151 network requests to raw.githubusercontent.com for the pixel sprites in ' +
+				"PokeAPI's sprite repository (github.com/PokeAPI/sprites). Nothing is downloaded unless you press it. The images " +
+				'belong to Nintendo / Game Freak. They are saved in this plugin\'s folder for your own use: do not commit or share ' +
+				'them. If the download fails, nothing is saved and the placeholder badges stay.',
+		});
+		const row = new Setting(containerEl)
+			.setName(loaded ? `Downloaded (${loaded} sprites)` : 'Not downloaded: placeholder badges')
+			.setDesc(`Saved in ${this.plugin.spritesDir()}`);
+		if (loaded) {
+			row.addButton((b) =>
+				b.setButtonText('Remove sprites').onClick(() => {
+					void this.plugin.removeSprites().then(() => this.display());
+				}),
+			);
+		} else {
+			row.addButton((b) => {
+				b.setButtonText(this.plugin.spriteDownloadRunning ? 'Downloading…' : 'Download sprites')
+					.setCta()
+					.setDisabled(this.plugin.spriteDownloadRunning)
+					.onClick(() => {
+						b.setDisabled(true);
+						void this.plugin
+							.downloadAndSaveSprites((done, total) => {
+								b.setButtonText(`Downloading ${done}/${total}…`);
+							})
+							.then(() => this.display());
+					});
+			});
+		}
 	}
 }

@@ -1,13 +1,20 @@
-// Badges: the local sprite when one exists (S1, Sheikh 2026-10-12: fetched by
-// `npm run sprites` into a git-ignored file, never committed), otherwise a coloured
-// placeholder badge with the initial. The repo and CI always use the placeholder.
+// Badges: the user's downloaded sprite when there is one (DB, Sheikh 2026-10-13: fetched only
+// when the user presses "Download sprites", saved in the plugin folder, never in the repo or a
+// release), otherwise a coloured placeholder badge with the initial.
 
 import { Species, Tier } from '../species';
-import { SPRITES } from 'sprites-data';
 
-/** The local sprite for a species, or null (no local sprite file: CI, fresh clones). */
+/** dex → image URL (blob:) for the downloaded sprites. Empty until they're loaded. */
+let sprites: ReadonlyMap<number, string> = new Map();
+
+/** Swaps in a new set of sprite URLs (or an empty map to go back to badges). */
+export function setSprites(next: ReadonlyMap<number, string>): void {
+	sprites = next;
+}
+
+/** The downloaded sprite for a species, or null (none downloaded: badges). */
 export function spriteFor(dex: number): string | null {
-	return SPRITES[dex] ?? null;
+	return sprites.get(dex) ?? null;
 }
 
 /** Our own palette, one colour per type. */
@@ -52,7 +59,7 @@ export function renderBadge(parent: HTMLElement, species: Species, seen: boolean
 	const badge = parent.createDiv({ cls: `sheiko-pokedex-badge sheiko-pokedex-badge-${size}` });
 	const sprite = spriteFor(species.dex);
 	if (sprite) {
-		// Local sprite (S1): the art itself; unseen Pokémon show as a black silhouette.
+		// Downloaded sprite (DB): the art itself; unseen Pokémon show as a black silhouette.
 		badge.addClass('has-sprite');
 		const img = badge.createEl('img', { cls: 'sheiko-pokedex-sprite' });
 		img.src = sprite;
