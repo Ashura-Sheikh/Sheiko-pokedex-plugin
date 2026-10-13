@@ -20,6 +20,7 @@ import {
 	setPartner,
 	starterChoices,
 	starterSummary,
+	starterXpConfirmText,
 	useStarterXp,
 } from './store';
 import { registerTestCommands } from './dev-tools';
@@ -38,16 +39,16 @@ import { SHEIKO_ID, Watcher, sheikoEnabled } from './watcher';
 import { RewardInfo, RewardModal } from './ui/reward-modal';
 import { PokedexView, VIEW_TYPE_POKEDEX } from './ui/pokedex-view';
 import { EvolveModal } from './ui/evolve-modal';
-import { GameBoyEvolveModal } from './ui/gameboy-evolve-modal';
+import { EvolutionSceneModal } from './ui/evolution-scene-modal';
 import { DetailModal } from './ui/detail-modal';
 import { PartnerSuggestModal, SpeciesSuggestModal } from './ui/partner-suggest';
 import { setSprites } from './ui/art';
 import {
-	SPRITES_GITIGNORE,
 	SPRITES_INTRO,
 	SPRITE_COUNT,
 	checkSprite,
 	downloadSprites,
+	saveSpritesAtomically,
 	spriteFileName,
 	spriteInfo,
 } from './sprites';
@@ -237,10 +238,10 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const from = speciesByDex(dex);
 		const to = mon ? check(dex, mon) : null;
 		if (!from || !to) return;
-		// Game Boy flow (Sheikh, 2026-10-12, option B): the scene starts straight away with
+		// Evolution scene flow (Sheikh, 2026-10-12, option B): the scene starts straight away with
 		// "What? X is evolving!"; B, Stop or closing the window stops it.
 		this.showWindow(() =>
-			new GameBoyEvolveModal(this.app, from, to, {
+			new EvolutionSceneModal(this.app, from, to, {
 				cancellable: true,
 				calm: this.calmEvolution(),
 				onResult: (outcome) => void this.enqueue(async () => {
@@ -399,7 +400,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const left = this.data.starter.xpLeft;
 		const yes = await this.confirmOnce(
 			`Starter pack: ${STARTER_XP} XP for ${name}?`,
-			`Uses 1 of your ${left} remaining (out of ${STARTER_XP_USES}). Each one can only be used once. Use it now?`,
+			starterXpConfirmText(left),
 			'Use it now',
 		);
 		if (!yes) return;
@@ -444,9 +445,9 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.showWindow(() =>
 			new EvolveModal(this.app, from, to, stone, (yes) => {
 				if (!yes) return;
-				// Confirmed: play the Game Boy scene. Stone evolutions can't be stopped, as in the game.
+				// Confirmed: play the Evolution scene. Stone evolutions can't be stopped, as in the game.
 				this.showWindow(() =>
-					new GameBoyEvolveModal(this.app, from, to, {
+					new EvolutionSceneModal(this.app, from, to, {
 						cancellable: false,
 						calm: this.calmEvolution(),
 						onResult: () =>
@@ -598,14 +599,8 @@ export default class SheikoPokedexPlugin extends Plugin {
 				new Notice(`Sheiko Pokédex: sprites not downloaded. ${result.error} Placeholder badges stay.`, 10000);
 				return;
 			}
-			const adapter = this.app.vault.adapter;
-			const dir = this.spritesDir();
-			if (!(await adapter.exists(dir))) await adapter.mkdir(dir);
-			await adapter.write(`${dir}/.gitignore`, SPRITES_GITIGNORE);
-			for (const [dex, bytes] of result.sprites) {
-				const copy = bytes.slice(); // its own ArrayBuffer, exactly the PNG's bytes
-				await adapter.writeBinary(`${dir}/${spriteFileName(dex)}`, copy.buffer);
-			}
+			// All-or-nothing (0.9.1): written to a temp folder, then swapped in; on failure nothing changes.
+			await saveSpritesAtomically(this.app.vault.adapter, this.spritesDir(), result.sprites);
 			const ok = await this.loadSprites();
 			this.lastSpriteError = ok ? null : 'Saved but could not be loaded. See the developer console.';
 			new Notice(ok ? `Sheiko Pokédex: ${SPRITE_COUNT} sprites downloaded.` : 'Sheiko Pokédex: sprites saved but could not be loaded. See the console.');

@@ -180,7 +180,7 @@
 .sheiko-pokedex-hero-facts { font-size: var(--font-ui-small); color: var(--text-muted); }
 .sheiko-pokedex-hero-buttons { display: flex; gap: var(--size-4-2); margin-top: var(--size-4-2); }
 
-/* Game Boy evolution scene (0.7.0): original DMG green screen, Red/Blue text box. */
+/* Evolution scene (0.7.0; renamed from "Game Boy evolution scene" in 0.9.1): original Game Boy (DMG) green screen, Red/Blue text box. */
 .sheiko-pokedex-gb { display: flex; flex-direction: column; align-items: center; }
 .sheiko-pokedex-gb-screen {
 	background: var(--gb-0);

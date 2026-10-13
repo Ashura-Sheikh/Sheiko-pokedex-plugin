@@ -1,4 +1,4 @@
-// The Game Boy evolution scene, checked against Red/Blue's EvolveMon (pret/pokered,
+// The Evolution scene, checked against Red/Blue's EvolveMon (pret/pokered,
 // engine/movie/evolution.asm): 80-frame intro, 8 cycles of a pause (16..2 frames) then
 // 1..8 back-and-forth swaps of 3 frames each, B read during pauses only.
 
@@ -13,14 +13,14 @@ import {
 	calmTimeline,
 	dmgShade,
 	evolutionText,
-	gameBoyTimeline,
+	evolutionTimeline,
 	play,
 	toDmg,
 	totalFrames,
 } from '../src/evolution-anim';
 
 test('Red/Blue timeline: intro, then 8 cycles of a shrinking pause and a growing burst', () => {
-	const t = gameBoyTimeline();
+	const t = evolutionTimeline();
 	assert.deepEqual(t[0], { kind: 'show', pic: 'old', silhouette: false, frames: INTRO_FRAMES });
 	const pauses = t.filter((s) => s.kind === 'pause');
 	assert.equal(pauses.length, CYCLES);
@@ -32,7 +32,7 @@ test('Red/Blue timeline: intro, then 8 cycles of a shrinking pause and a growing
 });
 
 test('each burst alternates new/old and ends on the old picture, all as silhouettes', () => {
-	const t = gameBoyTimeline();
+	const t = evolutionTimeline();
 	let burst: Step[] = [];
 	const bursts: Step[][] = [];
 	for (const s of t.slice(1)) {
@@ -63,12 +63,12 @@ function player(opts: { cancelAfterRenders?: number; cancellable?: boolean }) {
 
 test('no cancel: the whole scene plays and the Pokémon evolves', async () => {
 	const { p, rendered } = player({});
-	assert.equal(await play(gameBoyTimeline(), p), 'evolved');
-	assert.equal(rendered.length, gameBoyTimeline().length);
+	assert.equal(await play(evolutionTimeline(), p), 'evolved');
+	assert.equal(rendered.length, evolutionTimeline().length);
 });
 
 test('B pressed mid-burst takes effect at the next pause, as in the game', async () => {
-	const t = gameBoyTimeline();
+	const t = evolutionTimeline();
 	// Step 3 is the first swap of burst 1 (intro, pause 16, new, old, pause 14, …).
 	const { p, rendered } = player({ cancelAfterRenders: 3 });
 	assert.equal(await play(t, p), 'cancelled');
@@ -79,14 +79,14 @@ test('B pressed mid-burst takes effect at the next pause, as in the game', async
 
 test('B during the intro stops at the very first pause, before any swap', async () => {
 	const { p, rendered } = player({ cancelAfterRenders: 1 });
-	assert.equal(await play(gameBoyTimeline(), p), 'cancelled');
+	assert.equal(await play(evolutionTimeline(), p), 'cancelled');
 	assert.equal(rendered.length, 2);
 	assert.equal(rendered.filter((s) => s.kind === 'show' && s.silhouette).length, 0);
 });
 
 test('stone evolutions cannot be stopped, even with B held', async () => {
 	const { p } = player({ cancelAfterRenders: 0, cancellable: false });
-	assert.equal(await play(gameBoyTimeline(), p), 'evolved');
+	assert.equal(await play(evolutionTimeline(), p), 'evolved');
 });
 
 test('calm timeline: no flicker, still cancellable, ends on the new picture', async () => {

@@ -92,7 +92,7 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
   - a duplicate catch adds +50
   - without a partner, no XP is earned, and the notice says so
 - **Levels:** every caught Pokémon starts at level 5 and keeps its own level and XP, so swapping partners loses nothing. Going from level L to L+1 takes 10 × L XP, up to level 100.
-- **Evolution by level:** when the partner reaches its evolution level, the **Game Boy evolution scene** starts: "What? CHARMELEON is evolving!" on an original green screen. **Press B** (or **Stop**, or close the window) to stop it. Stop it and you're asked again at the next level.
+- **Evolution by level:** when the partner reaches its evolution level, the **Evolution scene** starts: "What? CHARMELEON is evolving!" on an original green screen. **Press B** (or **Stop**, or close the window) to stop it. Stop it and you're asked again at the next level.
   - The evolved form keeps the level and becomes the partner.
   - **Both forms stay caught** in the Pokédex.
 - **The evolution scene** follows Pokémon Red/Blue's own timing (from the pret/pokered disassembly):
@@ -141,7 +141,7 @@ To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokédex �
 
 - **Off by default.** Nothing is downloaded until you press the button. The plugin makes no other network requests.
 - **The network call:** 151 requests, one at a time with a short pause, to `raw.githubusercontent.com`, for the default sprites in [PokeAPI's sprite repository](https://github.com/PokeAPI/sprites) (`sprites/pokemon/1.png` to `151.png`). It takes about half a minute.
-- **Checks:** each image must be a PNG, 96×96 and under 64 KB. All 151 are downloaded and checked before anything is saved. If the source can't be reached or any image fails a check, nothing is saved and the badges stay.
+- **Checks:** each image must be a PNG, 96×96 and under 64 KB. All 151 are downloaded and checked before anything is saved. If the source can't be reached or any image fails a check, nothing is saved and the badges stay. Saving is all-or-nothing too: the files go into a temporary folder that's only moved into place once every one is written, so a disk error partway through leaves nothing behind.
 - **Where they're saved:** `<your vault>/.obsidian/plugins/sheiko-pokedex/sprites/` (`001.png` to `151.png`), with a `.gitignore` that ignores the whole folder. They're checked again each time Obsidian loads them.
 - **Who owns them:** the artwork belongs to Nintendo / Game Freak. It is not covered by this plugin's licence or PokeAPI's. **Sprites are for your own use: don't commit, share or redistribute them.**
 - **To go back to badges,** press **Remove sprites** in the same place. That deletes the folder.
@@ -179,6 +179,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Changelog
 
+- **0.9.1:** the sprite save is all-or-nothing (a temporary folder, moved into place only when complete). The Starter pack's XP confirmation no longer repeats itself. The evolution scene is now called the **Evolution scene** (it was the "Game Boy evolution scene").
 - **0.9.0:** the **Starter pack**: once per install, one of each stone, one uncaught Pokémon of your choice (marked as from the Starter pack) and 500 XP three times, each asked first and never refilled. The unlimited test tools are now in development builds only.
 - **Docs (no release):** a [user guide](docs/USER-GUIDE.md) with badge-only screenshots. The image tests now allow PNGs in `docs/images/` only, and fail on any committed PNG of sprite size.
 - **0.8.0:** sprites from a **Download sprites** button in settings: off by default, all-or-nothing, checked, saved in the plugin folder with its own `.gitignore`. Removes the build-time `npm run sprites`. The README credits for the sprites now say who owns them.

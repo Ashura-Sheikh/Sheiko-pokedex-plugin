@@ -488,6 +488,15 @@ export function starterSummary(p: StarterPack): string {
 	return parts.length ? parts.join(' · ') : 'nothing, all used';
 }
 
+/**
+ * The XP gift's confirmation (0.9.1). 0.9.0 said "Uses 1 of your 3 remaining (out of 3)", repeating
+ * itself when none were used. Now: "Uses 1 of the 3 you have left…", or "This is your last one…".
+ */
+export function starterXpConfirmText(left: number): string {
+	const which = left <= 1 ? 'This is your last one.' : `Uses 1 of the ${left} you have left.`;
+	return `${which} Each can only be used once. Use it now?`;
+}
+
 /** Dex numbers the Starter pack can add: every Gen 1 species not caught yet. */
 export function starterChoices(data: PokedexData): number[] {
 	const out: number[] = [];
