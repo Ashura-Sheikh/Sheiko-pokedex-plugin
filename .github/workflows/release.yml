@@ -7,6 +7,9 @@
 name: Release
 
 on:
+concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
     push:
         tags:
             - '*'
@@ -63,8 +66,14 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  tag="${GITHUB_REF#refs/tags/}"
-                  gh release create "$tag" \
-                    --title="$tag" \
-                    --draft \
-                    main.js manifest.json styles.css
+               tag="${GITHUB_REF#refs/tags/}"
+               # Drafts aren't returned by the by-tag endpoint, so list all releases.
+               existing=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name == \"$tag\") | .id")
+               if [ -n "$existing" ]; then
+                 echo "A release for $tag already exists (id $existing); not creating another."
+                 exit 0
+               fi
+               gh release create "$tag" \
+                 --title="v$tag" \
+                 --draft \
+                 main.js manifest.json styles.css
