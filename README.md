@@ -14,9 +14,16 @@ An Obsidian plugin that turns finishing tasks into catching Pokémon. Close task
 
 ## Install
 
-Not in the Obsidian community directory. Install by hand, using one of these two routes.
+Sheiko Pokedex is in the Obsidian community directory ([listing](https://community.obsidian.md/plugins/sheiko-pokedex)). Installing from Obsidian is the easiest route; the two manual routes below still work.
 
-### Option 1: from a release (recommended, no tools needed)
+### Option 1: from Obsidian (recommended)
+
+1. In Obsidian, go to **Settings → Community plugins** and turn off Restricted mode if it's on.
+2. Select **Browse**, search for **Sheiko Pokedex**, then select **Install** and **Enable**.
+
+Install and enable [TaskNotes](https://github.com/callumalpass/tasknotes) and [Sheiko Task Lifecycle](https://github.com/Ashura-Sheikh/Sheiko-obsidian-plugin) the same way if you haven't already.
+
+### Option 2: from a release (no tools needed)
 
 1. Open the [latest release](https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin/releases/latest) and download `main.js`, `manifest.json` and `styles.css`.
 2. Create the folder `<your vault>/.obsidian/plugins/sheiko-pokedex/` and put the 3 files in it.
@@ -24,9 +31,7 @@ Not in the Obsidian community directory. Install by hand, using one of these two
 
    ![Settings → Community plugins with Sheiko Pokedex v1.0.0 installed and enabled](docs/images/install-plugins.png)
 
-Every Pokémon shows as a **coloured placeholder badge** until you choose to download sprites in the plugin's settings. See [Sprites](#sprites-optional-downloaded-by-you). Releases never contain sprites; the release workflow fails if one ever would.
-
-### Option 2: build from source
+### Option 3: build from source
 
 You need [Node.js](https://nodejs.org/).
 
@@ -37,9 +42,11 @@ npm install
 npm run build
 ```
 
-Then copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/plugins/sheiko-pokedex/` and enable the plugin as in option 1.
+Then copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/plugins/sheiko-pokedex/` and enable the plugin as in option 2.
 
-### Either way
+### Whichever route
+
+Every Pokémon shows as a **coloured placeholder badge** until you choose to download sprites in the plugin's settings. See [Sprites](#sprites-optional-downloaded-by-you). Releases never contain sprites; the release workflow fails if one ever would.
 
 If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitignore`. That keeps your catch data out of your vault's history. Downloaded sprites have their own `.gitignore` as well.
 
