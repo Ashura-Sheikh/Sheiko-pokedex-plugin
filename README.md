@@ -57,12 +57,13 @@ If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitign
 3. **Some closes count for nothing:**
    - a task that has already counted once, including after a reopen, a rename or an archive move
    - a task closed with `closeReason: superseded` or `parked`
-   - any close after the day's catch limit (default 3 catches a day) is reached. That close never counts later.
+
+   **Closes after the day's catch limit** (default 3 catches a day) give your partner XP only (since 1.2.0). They add no catch progress and no daily boost, and they never count toward a catch later. The notice says the limit is reached and shows the XP.
 4. **Each counted close moves you toward the next catch.**
    - The target is a hidden number from 4 to 7, drawn again after every catch.
    - You see "close N toward your next catch". The target itself is never shown.
    - Progress is kept overnight.
-   - **Bulk closes:** when more than 50 tasks close within 6 minutes, the closes after the 50th count as **half a close**, toward both the hidden target and the daily boost, and weigh half in the batch average. XP isn't affected. Every close counts toward detecting a burst, including superseded, parked and over-the-limit ones. Both numbers are settings.
+   - **Bulk closes:** when more than 50 tasks close within 6 minutes, the closes after the 50th count as **half a close**, toward both the hidden target and the daily boost, and weigh half in the batch average. XP isn't affected, including for closes over the daily limit. Every close counts toward detecting a burst, including superseded, parked and over-the-limit ones. Both numbers are settings.
 5. **Each close gets a score:** priority points (high 3, medium 2, normal 1, other 0) + 2 if it closed within its SLA target.
    - **SLA targets:** high 1 day, medium 2, normal 3, other 7, measured from `dateCreated` to `completedDate`.
    - If `completedDate` has a date but no time and it's today's date (TaskNotes' default when Sheiko isn't writing), the moment the close was seen is used instead.
@@ -95,7 +96,7 @@ Task size (worked time) doesn't affect rarity. It scales your partner's XP (belo
   - **Hover:** shows XP, e.g. "140 / 170 XP", and whether an evolution is available.
   - **Click:** opens the Pokedex, or the partner picker if no partner is set yet.
   - **Right-click:** a menu with Open Pokedex, Choose partner and, when the partner has reached its evolution level (including after a Cancel), **Evolve now**.
-- **XP:** every counted close gives the partner XP:
+- **XP:** every counted close gives the partner XP, and so does every close after the daily catch limit:
   - 10, plus 1 per 30 minutes of task size, up to +40
   - task size is Sheiko's `timeWorkingMinutes` when present, otherwise `dateCreated` → close
   - a duplicate catch adds +50

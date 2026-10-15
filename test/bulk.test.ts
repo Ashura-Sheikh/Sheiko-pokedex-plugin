@@ -83,6 +83,22 @@ test('excluded and capped closes still count toward detecting a burst', () => {
 	assert.equal(r.data.progress.closes, 0.5);
 });
 
+test('over the daily limit, closes in a burst still get full XP and still count toward the burst (1.2.0, #26, option a)', () => {
+	let data = setPartner(testAddPokemon(counting(), 4, START), 4);
+	data.settings.dailyCap = 0; // every close is over the limit
+	data.settings.bulkThreshold = 2;
+	const gains: number[] = [];
+	for (let i = 0; i < 5; i++) {
+		const r = decide(close(`X${i}.md`), data, MAP, at(i));
+		data = r.data;
+		assert.equal(r.decision.kind, 'capped');
+		if (r.decision.kind === 'capped') gains.push(r.decision.xp?.gained ?? -1);
+	}
+	assert.deepEqual(gains, [11, 11, 11, 11, 11], 'closes 3-5 are a burst; XP is not halved');
+	assert.equal(data.recentCloses.length, 5, 'they still count toward detecting a burst');
+	assert.equal(data.progress.closes, 0, 'and add no catch progress');
+});
+
 test('half credit slows the catch: a target of 4 needs 8 bulk closes', () => {
 	let data = freshData(START);
 	data.settings.bulkThreshold = 0; // every close is bulk

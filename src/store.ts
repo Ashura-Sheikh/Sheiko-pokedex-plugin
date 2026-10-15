@@ -4,6 +4,10 @@
 // 0.2.0 (Sheikh, 2026-10-12): a catch comes every 4-7 counted closes (hidden target).
 // Rarity uses the average score of the closes since the last catch, plus a daily
 // boost for how many closes were counted today. At most 3 catches a day.
+//
+// 1.2.0 (Sheikh, 2026-10-15, issue #26): the daily limit stops catches, not partner growth.
+// A close over the limit still gives the partner its normal XP, but no catch progress
+// and no daily boost, and it never counts toward a catch later.
 
 import {
 	ContextTypes,
@@ -289,7 +293,7 @@ export interface XpGain {
 export type Decision =
 	| { kind: 'already' }
 	| { kind: 'excluded'; reason: string }
-	| { kind: 'capped'; cap: number }
+	| { kind: 'capped'; cap: number; xp: XpGain | null }
 	| { kind: 'counted'; closes: number; xp: XpGain | null; bulk: boolean }
 	| { kind: 'caught'; draw: Draw; duplicate: boolean; count: number; xp: XpGain | null; stone: StoneKind | null; bulk: boolean };
 
@@ -374,8 +378,11 @@ export function decide(
 
 	const cap = Math.max(0, Math.floor(data.settings.dailyCap));
 	if (next.daily.catches >= cap) {
+		// Over the limit (1.2.0, #26): the partner still gets the normal close XP. Progress,
+		// today's closes (the daily boost) and the batch are untouched. Bulk doesn't change XP.
 		next.ledger[input.path] = { at, outcome: 'capped' };
-		return { data: next, decision: { kind: 'capped', cap } };
+		const xp = givePartnerXp(next, xpForClose(sizeMinutes(input, now)));
+		return { data: next, decision: { kind: 'capped', cap, xp } };
 	}
 
 	// Count the close toward the batch. A bulk close counts as half a close toward the

@@ -130,6 +130,74 @@ test('a catch gives XP; a duplicate catch adds +50; a new catch starts at level 
 	assert.ok(sawNew && sawDup);
 });
 
+// ---------- Over the daily limit (1.2.0, Sheikh, 2026-10-15, issue #26) ----------
+
+/** Partner Charmander, and a daily limit already reached (3 catches today). */
+function overTheLimit(): PokedexData {
+	const data = setPartner(withCaught([4]), 4);
+	data.daily = { date: data.daily.date, closes: 9, catches: 3 };
+	return data;
+}
+
+test('over the daily limit, the partner still gets the normal close XP', () => {
+	const data = overTheLimit();
+	const r = decide(close('A.md', { workingMinutes: 90 }), data, MAP, NOW);
+	assert.deepEqual(r.decision, {
+		kind: 'capped',
+		cap: 3,
+		xp: { dex: 4, gained: 13, fromLevel: 5, toLevel: 5 },
+	});
+	assert.equal(r.data.mons['4']?.xp, 13, '10 + 3 for 90 minutes, the same as a counted close');
+	assert.equal(r.data.ledger['A.md']?.outcome, 'capped');
+});
+
+test('over the daily limit: no catch, no progress, no daily boost, nothing carried over', () => {
+	const data = overTheLimit();
+	const r = decide(close('A.md'), data, MAP, NOW);
+	assert.deepEqual(r.data.progress, data.progress, 'no progress toward the next catch');
+	assert.deepEqual(r.data.daily, data.daily, "today's closes (the daily boost) and catches unchanged");
+	assert.equal(r.data.catches, data.catches);
+	assert.deepEqual(r.data.caught, data.caught, 'nothing caught');
+	// The same task can't earn twice, today or tomorrow.
+	const tomorrow = new Date('2026-10-13T09:00:00+01:00');
+	const again = decide(close('A.md'), r.data, MAP, tomorrow);
+	assert.equal(again.decision.kind, 'already');
+	assert.equal(again.data.mons['4']?.xp, r.data.mons['4']?.xp);
+});
+
+test('over the daily limit without a partner: no XP, and the decision says so', () => {
+	const data = withCaught([4]);
+	data.daily = { date: data.daily.date, closes: 9, catches: 3 };
+	const r = decide(close('A.md'), data, MAP, NOW);
+	assert.deepEqual(r.decision, { kind: 'capped', cap: 3, xp: null });
+	assert.deepEqual(r.data.mons['4'], newMon());
+});
+
+test('over the daily limit, superseded and parked closes still give no XP', () => {
+	for (const reason of ['superseded', 'parked']) {
+		const r = decide(close('A.md', { closeReason: reason }), overTheLimit(), MAP, NOW);
+		assert.equal(r.decision.kind, 'excluded');
+		assert.equal(r.data.mons['4']?.xp, 0, reason);
+	}
+});
+
+test('over-the-limit XP can level the partner up and make an evolution ready', () => {
+	const data = overTheLimit();
+	data.mons['4'] = { level: 15, xp: xpToNext(15) - 1 };
+	const r = decide(close('A.md'), data, MAP, NOW);
+	assert.equal(r.decision.kind, 'capped');
+	if (r.decision.kind !== 'capped') return;
+	assert.deepEqual([r.decision.xp?.fromLevel, r.decision.xp?.toLevel], [15, 16]);
+	assert.equal(readyLevelEvolution(4, r.data.mons['4']!)?.name, 'Charmeleon', 'the evolution prompt can follow');
+});
+
+test('a limit of 0 means every close is over the limit, and still gives XP', () => {
+	const data = setPartner(withCaught([4]), 4);
+	data.settings.dailyCap = 0;
+	const r = decide(close('A.md'), data, MAP, NOW);
+	assert.deepEqual(r.decision, { kind: 'capped', cap: 0, xp: { dex: 4, gained: 11, fromLevel: 5, toLevel: 5 } });
+});
+
 // ---------- Stones ----------
 
 test('stone kind follows the caught type table; unmatched types get a random kind', () => {
