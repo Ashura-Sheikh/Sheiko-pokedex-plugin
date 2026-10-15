@@ -44,6 +44,7 @@ export class PokedexView extends ItemView {
 	private controls: BrowseControls = defaultControls();
 	private headEl: HTMLElement | null = null;
 	private toolbarEl: HTMLElement | null = null;
+	private countEl: HTMLElement | null = null;
 	private resultsEl: HTMLElement | null = null;
 
 	/**
@@ -57,6 +58,9 @@ export class PokedexView extends ItemView {
 			el.addClass('sheiko-pokedex-view');
 			this.headEl = el.createDiv({ cls: 'sheiko-pokedex-head' });
 			this.toolbarEl = el.createDiv({ cls: 'sheiko-pokedex-toolbar' });
+			// Kept between redraws so screen readers announce the new count.
+			this.countEl = el.createDiv({ cls: 'sheiko-pokedex-count-line' });
+			this.countEl.setAttr('aria-live', 'polite');
 			this.resultsEl = el.createDiv({ cls: 'sheiko-pokedex-results' });
 			this.buildToolbar(this.toolbarEl);
 		}
@@ -160,9 +164,7 @@ export class PokedexView extends ItemView {
 
 		// The count is the number of cards shown. With a filter or name search on, only
 		// caught cards are shown, so it never counts unseen Pokémon by type or rarity.
-		const count = el.createDiv({ cls: 'sheiko-pokedex-count-line' });
-		count.setAttr('aria-live', 'polite');
-		count.setText(`${result.cells.length} shown`);
+		this.countEl?.setText(`${result.cells.length} shown`);
 
 		if (result.state === 'nothing-caught') {
 			this.emptyState(el, "You haven't caught any Pokémon yet.", 'Show all Pokémon', () =>
