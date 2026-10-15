@@ -127,7 +127,7 @@ export class PokedexView extends ItemView {
 
 		// Sort (#29). In All, caught Pokémon come first in this order, then unseen in dex order.
 		const sortLabels: Record<SortKey, string> = {
-			number: 'Sort: Pokédex number',
+			number: 'Sort: Pokedex number',
 			name: 'Sort: name',
 			level: 'Sort: level (highest)',
 			catches: 'Sort: catches (most)',
@@ -142,7 +142,7 @@ export class PokedexView extends ItemView {
 			this.renderResults();
 		});
 
-		// Clear (#30): back to All, empty search, Any type, Any rarity, Pokédex number.
+		// Clear (#30): back to All, empty search, Any type, Any rarity, Pokedex number.
 		const clear = bar.createEl('button', { text: 'Clear' });
 		clear.setAttr('aria-label', 'Clear search, filters and sort');
 		clear.addEventListener('click', () => this.setControls(defaultControls()));

@@ -24,7 +24,7 @@ const dexes = (r: ReturnType<typeof browse>) => r.cells.map((c) => c.dex);
 
 // ---------- #32: scope ----------
 
-test('defaults: scope All (Sheikh, 2026-10-15), all 151 in Pokédex order', () => {
+test('defaults: scope All (Sheikh, 2026-10-15), all 151 in Pokedex order', () => {
 	assert.deepEqual(defaultControls(), { scope: 'all', search: '', type: null, tier: null, sort: 'number' });
 	const r = browse(caught([4, 25]), defaultControls());
 	assert.equal(r.cells.length, GEN1.length);
@@ -118,7 +118,7 @@ test('with any filter on, no unseen card shows, in any scope, even for a number 
 });
 
 test('filter results depend only on caught Pokémon: the same for any set of unseen ones', () => {
-	// Two Pokédexes with the same caught Pokémon give identical results for every filter.
+	// Two Pokedexes with the same caught Pokémon give identical results for every filter.
 	const a = caught([4, 25]);
 	for (const type of allTypes()) {
 		for (const tier of [null, ...TIERS]) {
@@ -146,7 +146,7 @@ function sortData(): BrowseData {
 	return data;
 }
 
-test('each sort orders caught Pokémon; ties fall back to Pokédex number', () => {
+test('each sort orders caught Pokémon; ties fall back to Pokedex number', () => {
 	const data = sortData();
 	const order = (sort: SortKey) => dexes(browse(data, controls({ scope: 'caught', sort })));
 	assert.deepEqual(order('number'), [4, 25, 63]);
@@ -197,7 +197,7 @@ test('missing level or date: the starting level and the oldest date', () => {
 
 // ---------- #30: Clear, empty and no-results states ----------
 
-test('Clear restores the documented defaults: All, empty search, Any, Any, Pokédex number', () => {
+test('Clear restores the documented defaults: All, empty search, Any, Any, Pokedex number', () => {
 	const cleared = defaultControls();
 	assert.deepEqual(cleared, { scope: 'all', search: '', type: null, tier: null, sort: 'number' });
 	// Each call is a fresh object, so a reset can't share state with an earlier one.

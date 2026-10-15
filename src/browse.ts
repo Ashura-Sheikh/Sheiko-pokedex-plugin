@@ -26,8 +26,8 @@ export interface BrowseControls {
 }
 
 /**
- * Pokédex number, name (A-Z), level (highest first), number of catches (most first), and
- * date added to the Pokédex, newest or oldest first. "Date added" is `firstAt`, which is
+ * Pokedex number, name (A-Z), level (highest first), number of catches (most first), and
+ * date added to the Pokedex, newest or oldest first. "Date added" is `firstAt`, which is
  * also set by an evolution and by the Starter pack, so it isn't strictly the first catch.
  */
 export type SortKey = 'number' | 'name' | 'level' | 'catches' | 'newest' | 'oldest';
@@ -104,10 +104,10 @@ export function browse(data: BrowseData, c: BrowseControls, all: readonly Specie
 }
 
 /**
- * Sheikh's option (a), 2026-10-15: by Pokédex number, everything stays in order. For any
+ * Sheikh's option (a), 2026-10-15: by Pokedex number, everything stays in order. For any
  * other sort, caught Pokémon come first in that order, then unseen cards in dex order.
  * The unseen cards' positions depend only on how many are caught, so they reveal nothing.
- * Ties fall back to Pokédex number. Sorts `cells` in place.
+ * Ties fall back to Pokedex number. Sorts `cells` in place.
  */
 function sortCells(cells: BrowseCell[], sort: SortKey, data: BrowseData, all: readonly Species[]): void {
 	if (sort === 'number') return; // already in dex order

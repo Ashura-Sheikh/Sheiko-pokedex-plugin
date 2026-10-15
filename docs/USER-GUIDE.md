@@ -54,8 +54,8 @@ Open it from the ribbon icon (**Open Pokedex**), from the **Open Pokedex** comma
   - **All · Caught · Uncaught:** which Pokémon to show. It starts on All.
   - **Search:** part of a caught Pokémon's name (e.g. "char"), or a number such as `25` or `#025`.
   - **Type** and **Rarity:** show only caught Pokémon of that type or rarity.
-  - **Sort:** Pokédex number, name, level, catches, or date added (newest or oldest). "Date added" is when the Pokémon joined your Pokédex, including by evolving or from the Starter pack.
-  - **Clear:** back to All, no search, any type, any rarity, Pokédex number.
+  - **Sort:** Pokedex number, name, level, catches, or date added (newest or oldest). "Date added" is when the Pokémon joined your Pokedex, including by evolving or from the Starter pack.
+  - **Clear:** back to All, no search, any type, any rarity, Pokedex number.
 
   Your choices stay while the view is open, even when a catch refreshes it. Unseen Pokémon stay **???**: searching, filtering and sorting never reveal anything about them.
 
