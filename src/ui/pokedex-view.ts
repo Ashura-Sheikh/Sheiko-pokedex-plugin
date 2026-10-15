@@ -137,6 +137,11 @@ export class PokedexView extends ItemView {
 			this.controls = { ...this.controls, sort: (SORT_KEYS as readonly string[]).includes(v) ? (v as SortKey) : 'number' };
 			this.renderResults();
 		});
+
+		// Clear (#30): back to All, empty search, Any type, Any rarity, Pokédex number.
+		const clear = bar.createEl('button', { text: 'Clear' });
+		clear.setAttr('aria-label', 'Clear search, filters and sort');
+		clear.addEventListener('click', () => this.setControls(defaultControls()));
 	}
 
 	private select(parent: HTMLElement, label: string, options: [string, string][]): HTMLSelectElement {
@@ -152,11 +157,45 @@ export class PokedexView extends ItemView {
 		el.empty();
 		const data = this.host.getData();
 		const result = browse(data, this.controls);
+
+		// The count is the number of cards shown. With a filter or name search on, only
+		// caught cards are shown, so it never counts unseen Pokémon by type or rarity.
+		const count = el.createDiv({ cls: 'sheiko-pokedex-count-line' });
+		count.setAttr('aria-live', 'polite');
+		count.setText(`${result.cells.length} shown`);
+
+		if (result.state === 'nothing-caught') {
+			this.emptyState(el, "You haven't caught any Pokémon yet.", 'Show all Pokémon', () =>
+				this.setControls({ ...this.controls, scope: 'all' }),
+			);
+			return;
+		}
+		if (result.state === 'no-results') {
+			this.emptyState(el, 'No Pokémon match these filters.', 'Clear filters', () => this.setControls(defaultControls()));
+			return;
+		}
 		const grid = el.createDiv({ cls: 'sheiko-pokedex-grid' });
 		for (const cell of result.cells) {
 			const p = speciesByDex(cell.dex);
 			if (p) this.renderCell(grid, p, cell.seen, data);
 		}
+	}
+
+	private emptyState(parent: HTMLElement, message: string, action: string, onClick: () => void): void {
+		const box = parent.createDiv({ cls: 'sheiko-pokedex-empty' });
+		box.createDiv({ text: message });
+		const b = box.createEl('button', { cls: 'mod-cta', text: action });
+		b.addEventListener('click', onClick);
+	}
+
+	/** Sets every control at once (Clear, recovery actions) and rebuilds the toolbar to match. */
+	private setControls(next: BrowseControls): void {
+		this.controls = next;
+		if (this.toolbarEl) {
+			this.toolbarEl.empty();
+			this.buildToolbar(this.toolbarEl);
+		}
+		this.renderResults();
 	}
 
 	private renderHead(head: HTMLElement): void {

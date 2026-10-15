@@ -50,6 +50,14 @@ Open it from the ribbon icon (**Open Pokedex**), from the **Open Pokedex** comma
 - **Stats:** species caught out of 151, total catches, catches and closes today, progress toward the next catch, and how many of each rarity you've caught.
 - **Stones:** how many of each of the 6 stones you hold (Fire, Water, Thunder, Leaf, Moon, Trade). Stones you have none of are dimmed.
 - **The grid:** all 151 Gen 1 Pokémon. The ones you've caught show their name, level, types and the 4 moves they know. The rest show as **???**.
+- **Toolbar** (above the grid, since 1.3.0):
+  - **All · Caught · Uncaught:** which Pokémon to show. It starts on All.
+  - **Search:** part of a caught Pokémon's name (e.g. "char"), or a number such as `25` or `#025`.
+  - **Type** and **Rarity:** show only caught Pokémon of that type or rarity.
+  - **Sort:** Pokédex number, name, level, catches, or date added (newest or oldest). "Date added" is when the Pokémon joined your Pokédex, including by evolving or from the Starter pack.
+  - **Clear:** back to All, no search, any type, any rarity, Pokédex number.
+
+  Your choices stay while the view is open, even when a catch refreshes it. Unseen Pokémon stay **???**: searching, filtering and sorting never reveal anything about them.
 
 You won't have a partner at first. Choose one with **Choose partner** in the view, the **Choose partner** command, or **Make partner** on any Pokémon you've caught. Only your partner earns XP.
 

@@ -195,6 +195,38 @@ test('missing level or date: the starting level and the oldest date', () => {
 	assert.deepEqual(dexes(browse(data, controls({ scope: 'caught', sort: 'newest' }))), [2, 1]);
 });
 
+// ---------- #30: Clear, empty and no-results states ----------
+
+test('Clear restores the documented defaults: All, empty search, Any, Any, Pokédex number', () => {
+	const cleared = defaultControls();
+	assert.deepEqual(cleared, { scope: 'all', search: '', type: null, tier: null, sort: 'number' });
+	// Each call is a fresh object, so a reset can't share state with an earlier one.
+	assert.notEqual(defaultControls(), defaultControls());
+	// After Clear, the grid is the full 151 in order again.
+	assert.deepEqual(dexes(browse(caught([4]), cleared)), GEN1.map((p) => p.dex));
+});
+
+test('states: no-results for an unmatched search or filter; nothing-caught only in Caught', () => {
+	const data = caught([4]);
+	assert.equal(browse(data, controls({ search: 'pika' })).state, 'no-results');
+	assert.equal(browse(data, controls({ type: 'water' })).state, 'no-results');
+	assert.equal(browse(data, controls({ scope: 'caught', type: 'water' })).state, 'no-results');
+	const none = caught([]);
+	assert.equal(browse(none, controls({ scope: 'caught' })).state, 'nothing-caught');
+	assert.equal(browse(none, controls({ scope: 'caught', type: 'fire' })).state, 'nothing-caught', 'the first-catch message wins');
+	assert.equal(browse(none, controls({ type: 'fire' })).state, 'no-results');
+});
+
+test('the result count never depends on unseen Pokémon when filtering or name-searching', () => {
+	// Same caught Pokémon, every filter/search: the number of cards equals the matching caught ones.
+	const data = caught([4, 6]);
+	for (const type of allTypes()) {
+		const n = browse(data, controls({ type })).cells.length;
+		assert.equal(n, [4, 6].filter((d) => GEN1[d - 1]!.types.includes(type)).length, type);
+	}
+	assert.equal(browse(data, controls({ search: 'a' })).cells.length, 2, 'Charmander, Charizard');
+});
+
 test('the type list is every Gen 1 type, sorted', () => {
 	const types = allTypes();
 	assert.deepEqual(types, [...types].sort());

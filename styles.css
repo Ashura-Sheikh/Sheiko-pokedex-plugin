@@ -64,6 +64,17 @@
 .sheiko-pokedex-scope { display: inline-flex; gap: var(--size-4-1); }
 .sheiko-pokedex-scope button.is-active { background-color: var(--interactive-accent); color: var(--text-on-accent); }
 .sheiko-pokedex-search { flex: 1 1 200px; min-width: 160px; }
+.sheiko-pokedex-count-line { font-size: var(--font-ui-smaller); color: var(--text-muted); margin-bottom: var(--size-4-2); }
+.sheiko-pokedex-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--size-4-2);
+	padding: var(--size-4-4);
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	color: var(--text-muted);
+}
 .sheiko-pokedex-cell {
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
