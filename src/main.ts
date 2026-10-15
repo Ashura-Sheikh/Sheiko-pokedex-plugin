@@ -192,7 +192,12 @@ export default class SheikoPokedexPlugin extends Plugin {
 				new Notice(`Sheiko Pokedex: no catch, "${file.basename}" was closed as ${decision.reason}.`);
 				return;
 			case 'capped':
-				new Notice(`Sheiko Pokedex: today's limit of ${decision.cap} catches is reached. "${file.basename}" doesn't count.`);
+				// 1.2.0 (#26): no catch progress over the limit, but the partner still earns XP.
+				new Notice(
+					`Sheiko Pokedex: today's limit of ${decision.cap} catches is reached. ` +
+						`No catch progress from "${file.basename}"${this.xpText(decision.xp)}`,
+				);
+				this.maybeAskToEvolve(decision.xp);
 				return;
 			case 'counted':
 				// The target stays hidden (Sheikh, 2026-10-12): show progress, not the goal.
@@ -684,7 +689,7 @@ class PokedexSettingTab extends PluginSettingTab {
 			},
 			{
 				name: 'Daily catch limit',
-				desc: 'Catches per day. Once reached, further closes that day earn nothing and never count later.',
+				desc: 'Catches per day. Once reached, further closes that day give your partner XP but no catch progress, and never count toward a catch later.',
 				control: {
 					type: 'number',
 					key: 'dailyCap',

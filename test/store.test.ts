@@ -103,15 +103,16 @@ test('progress is kept overnight; the daily counts reset', () => {
 	assert.equal(r.data.daily.catches, 0);
 });
 
-test('default limit is 3 catches a day; after that closes earn nothing and never count later', () => {
+test('default limit is 3 catches a day; after that closes add no progress and never count later', () => {
 	let data = freshData(NOW);
 	assert.equal(data.settings.dailyCap, 3);
 	for (const p of ['a', 'b', 'c']) data = closeUntilCatch(data, p).data;
 	assert.equal(data.daily.catches, 3);
 	const before = data.progress;
 	const capped = decide(close('x.md'), data, MAP, NOW);
-	assert.equal(capped.decision.kind, 'capped');
+	assert.deepEqual(capped.decision, { kind: 'capped', cap: 3, xp: null }, 'no partner here, so no XP (see progression tests)');
 	assert.deepEqual(capped.data.progress, before, 'no progress from a capped close');
+	assert.equal(capped.data.daily.closes, data.daily.closes, 'no daily boost from a capped close');
 	const tomorrow = new Date('2026-10-13T09:00:00+01:00');
 	assert.equal(decide(close('x.md'), capped.data, MAP, tomorrow).decision.kind, 'already');
 	assert.equal(decide(close('y.md'), capped.data, MAP, tomorrow).decision.kind, 'counted');
