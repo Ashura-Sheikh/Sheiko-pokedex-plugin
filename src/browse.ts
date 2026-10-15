@@ -6,6 +6,7 @@
 // anything about an unseen Pokémon (its name, types, rarity or anything else hidden).
 
 import { GEN1 } from './data/gen1';
+import { START_LEVEL } from './progression';
 import type { Species, Tier } from './species';
 import type { PokedexData } from './store';
 
@@ -21,10 +22,19 @@ export interface BrowseControls {
 	type: string | null;
 	/** A rarity tier, or null for Any. */
 	tier: Tier | null;
+	sort: SortKey;
 }
 
+/**
+ * Pokédex number, name (A-Z), level (highest first), number of catches (most first), and
+ * date added to the Pokédex, newest or oldest first. "Date added" is `firstAt`, which is
+ * also set by an evolution and by the Starter pack, so it isn't strictly the first catch.
+ */
+export type SortKey = 'number' | 'name' | 'level' | 'catches' | 'newest' | 'oldest';
+export const SORT_KEYS: readonly SortKey[] = ['number', 'name', 'level', 'catches', 'newest', 'oldest'];
+
 export function defaultControls(): BrowseControls {
-	return { scope: 'all', search: '', type: null, tier: null };
+	return { scope: 'all', search: '', type: null, tier: null, sort: 'number' };
 }
 
 /** Every type in the Gen 1 data, sorted. Listing them reveals nothing about which are caught. */
@@ -86,8 +96,47 @@ export function browse(data: BrowseData, c: BrowseControls, all: readonly Specie
 		}
 		cells.push({ dex: p.dex, seen });
 	}
+	sortCells(cells, c.sort, data, all);
 	const anyCaught = Object.keys(data.caught).length > 0;
 	const state: BrowseState =
 		c.scope === 'caught' && !anyCaught ? 'nothing-caught' : cells.length === 0 ? 'no-results' : 'ok';
 	return { cells, state };
+}
+
+/**
+ * Sheikh's option (a), 2026-10-15: by Pokédex number, everything stays in order. For any
+ * other sort, caught Pokémon come first in that order, then unseen cards in dex order.
+ * The unseen cards' positions depend only on how many are caught, so they reveal nothing.
+ * Ties fall back to Pokédex number. Sorts `cells` in place.
+ */
+function sortCells(cells: BrowseCell[], sort: SortKey, data: BrowseData, all: readonly Species[]): void {
+	if (sort === 'number') return; // already in dex order
+	const name = (dex: number) => all.find((p) => p.dex === dex)?.name ?? '';
+	const level = (dex: number) => data.mons[String(dex)]?.level ?? START_LEVEL;
+	const count = (dex: number) => data.caught[String(dex)]?.count ?? 0;
+	const added = (dex: number) => {
+		const ms = Date.parse(data.caught[String(dex)]?.firstAt ?? '');
+		return Number.isFinite(ms) ? ms : 0;
+	};
+	const byKey = (a: number, b: number): number => {
+		switch (sort) {
+			case 'name':
+				return name(a).localeCompare(name(b));
+			case 'level':
+				return level(b) - level(a);
+			case 'catches':
+				return count(b) - count(a);
+			case 'newest':
+				return added(b) - added(a);
+			case 'oldest':
+				return added(a) - added(b);
+			default:
+				return 0;
+		}
+	};
+	cells.sort((a, b) => {
+		if (a.seen !== b.seen) return a.seen ? -1 : 1;
+		if (!a.seen) return a.dex - b.dex;
+		return byKey(a.dex, b.dex) || a.dex - b.dex;
+	});
 }

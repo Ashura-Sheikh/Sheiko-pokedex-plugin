@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BrowseControls, BrowseData, allTypes, browse, defaultControls, parseDexQuery } from '../src/browse';
+import { BrowseControls, BrowseData, SORT_KEYS, SortKey, allTypes, browse, defaultControls, parseDexQuery } from '../src/browse';
 import { GEN1 } from '../src/data/gen1';
 import { TIERS } from '../src/species';
 
@@ -25,7 +25,7 @@ const dexes = (r: ReturnType<typeof browse>) => r.cells.map((c) => c.dex);
 // ---------- #32: scope ----------
 
 test('defaults: scope All (Sheikh, 2026-10-15), all 151 in Pokédex order', () => {
-	assert.deepEqual(defaultControls(), { scope: 'all', search: '', type: null, tier: null });
+	assert.deepEqual(defaultControls(), { scope: 'all', search: '', type: null, tier: null, sort: 'number' });
 	const r = browse(caught([4, 25]), defaultControls());
 	assert.equal(r.cells.length, GEN1.length);
 	assert.deepEqual(dexes(r), GEN1.map((p) => p.dex));
@@ -130,6 +130,69 @@ test('filter results depend only on caught Pokémon: the same for any set of uns
 			assert.deepEqual(dexes(r), expected, `${type} ${tier}`);
 		}
 	}
+});
+
+// ---------- #29: sort ----------
+
+/** Charmander Lv 20 ×1 (added 10-01), Pikachu Lv 9 ×3 (10-03), Abra Lv 20 ×2 (10-02). */
+function sortData(): BrowseData {
+	const data = caught([4, 25, 63]);
+	data.mons['4'] = { level: 20, xp: 0 };
+	data.mons['25'] = { level: 9, xp: 0 };
+	data.mons['63'] = { level: 20, xp: 0 };
+	data.caught['4'] = { count: 1, firstAt: '2026-10-01T09:00:00.000Z', lastAt: AT };
+	data.caught['25'] = { count: 3, firstAt: '2026-10-03T09:00:00.000Z', lastAt: AT };
+	data.caught['63'] = { count: 2, firstAt: '2026-10-02T09:00:00.000Z', lastAt: AT };
+	return data;
+}
+
+test('each sort orders caught Pokémon; ties fall back to Pokédex number', () => {
+	const data = sortData();
+	const order = (sort: SortKey) => dexes(browse(data, controls({ scope: 'caught', sort })));
+	assert.deepEqual(order('number'), [4, 25, 63]);
+	assert.deepEqual(order('name'), [63, 4, 25], 'Abra, Charmander, Pikachu');
+	assert.deepEqual(order('level'), [4, 63, 25], 'highest first; Lv 20 tie → #004 before #063');
+	assert.deepEqual(order('catches'), [25, 63, 4], 'most first');
+	assert.deepEqual(order('newest'), [25, 63, 4]);
+	assert.deepEqual(order('oldest'), [4, 63, 25]);
+});
+
+test('option (a): in All, caught come first in the chosen order, then unseen in dex order', () => {
+	const data = sortData();
+	const unseenInOrder = GEN1.map((p) => p.dex).filter((d) => ![4, 25, 63].includes(d));
+	for (const sort of SORT_KEYS) {
+		const r = browse(data, controls({ sort }));
+		assert.equal(r.cells.length, GEN1.length, sort);
+		if (sort === 'number') {
+			assert.deepEqual(dexes(r), GEN1.map((p) => p.dex));
+			continue;
+		}
+		assert.deepEqual(dexes(r).slice(3), unseenInOrder, `${sort}: unseen in dex order, after the caught`);
+		assert.ok(r.cells.slice(0, 3).every((c) => c.seen));
+	}
+});
+
+test('unseen positions never depend on hidden data, for any sort or scope', () => {
+	// The same caught Pokémon, so the unseen cards must land in identical positions,
+	// whatever the sort: nothing about them (names, levels, dates) can move them.
+	const data = sortData();
+	for (const scope of ['all', 'uncaught'] as const) {
+		const base = browse(data, controls({ scope }));
+		const baseUnseen = base.cells.filter((c) => !c.seen).map((c) => c.dex);
+		for (const sort of SORT_KEYS) {
+			const r = browse(data, controls({ scope, sort }));
+			assert.deepEqual(r.cells.filter((c) => !c.seen).map((c) => c.dex), baseUnseen, `${scope} ${sort}`);
+		}
+	}
+});
+
+test('missing level or date: the starting level and the oldest date', () => {
+	const data = caught([1, 2]);
+	delete data.mons['2']; // no saved level: counts as the starting level (5)
+	data.mons['1'] = { level: 6, xp: 0 };
+	assert.deepEqual(dexes(browse(data, controls({ scope: 'caught', sort: 'level' }))), [1, 2]);
+	data.caught['1'] = { count: 1, firstAt: 'not a date', lastAt: AT };
+	assert.deepEqual(dexes(browse(data, controls({ scope: 'caught', sort: 'newest' }))), [2, 1]);
 });
 
 test('the type list is every Gen 1 type, sorted', () => {

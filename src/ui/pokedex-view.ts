@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { GEN1 } from '../data/gen1';
 import { PokedexData, formatCount, localDate } from '../store';
 import { STONE_KINDS, Species, TIERS, Tier } from '../species';
-import { BrowseControls, SCOPES, Scope, allTypes, browse, defaultControls } from '../browse';
+import { BrowseControls, SCOPES, SORT_KEYS, Scope, SortKey, allTypes, browse, defaultControls } from '../browse';
 import { START_LEVEL, STONE_LABELS, currentMoves, evolutionHint, nextMove, speciesByDex, xpToNext } from '../progression';
 import { dexLabel, renderBadge, renderTypes, tierLabel, titleCase } from './art';
 import { renderXpBar } from './detail-modal';
@@ -118,6 +118,23 @@ export class PokedexView extends ItemView {
 		tierSelect.addEventListener('change', () => {
 			const v = tierSelect.value;
 			this.controls = { ...this.controls, tier: (TIERS as readonly string[]).includes(v) ? (v as Tier) : null };
+			this.renderResults();
+		});
+
+		// Sort (#29). In All, caught Pokémon come first in this order, then unseen in dex order.
+		const sortLabels: Record<SortKey, string> = {
+			number: 'Sort: Pokédex number',
+			name: 'Sort: name',
+			level: 'Sort: level (highest)',
+			catches: 'Sort: catches (most)',
+			newest: 'Sort: date added (newest)',
+			oldest: 'Sort: date added (oldest)',
+		};
+		const sortSelect = this.select(bar, 'Sort', SORT_KEYS.map((k): [string, string] => [k, sortLabels[k]]));
+		sortSelect.value = this.controls.sort;
+		sortSelect.addEventListener('change', () => {
+			const v = sortSelect.value;
+			this.controls = { ...this.controls, sort: (SORT_KEYS as readonly string[]).includes(v) ? (v as SortKey) : 'number' };
 			this.renderResults();
 		});
 	}
