@@ -88,6 +88,25 @@ If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitign
 
 Task size (worked time) doesn't affect rarity. It scales your partner's XP (below).
 
+## Browsing the Pokedex
+
+A toolbar above the grid (since 1.3.0):
+
+- **All · Caught · Uncaught:** which Pokémon to show. The view opens on **All**.
+- **Search** (case-insensitive): part of a caught Pokémon's name, or a Pokédex number (`25`, `025` or `#025`).
+- **Type** and **Rarity** filters, each with *Any*.
+- **Sort:** Pokédex number (default), name, level (highest first), catches (most first), or **date added** (newest or oldest first). Date added is when the Pokémon joined your Pokédex, which includes evolving and the Starter pack.
+- **Clear:** back to All, no search, any type, any rarity, Pokédex number.
+- **Empty states:** with nothing caught, Caught offers **Show all Pokémon**; when nothing matches, **Clear filters**.
+
+**Unseen Pokémon stay hidden:**
+- A name search only matches caught Pokémon.
+- With a type or rarity filter on, only caught Pokémon are shown, even when searching by number.
+- With any sort other than number, caught Pokémon come first and the **???** cards follow in Pokédex order.
+- So no search, filter, sort or count reveals anything about a Pokémon you haven't caught.
+
+The toolbar settings last while the view is open, including when it refreshes after a catch. They're never saved, and browsing never changes your data.
+
 ## Partner, levels, evolution and stones
 
 - **Partner card:** the partner gets a large card at the top of the Pokedex view: a 2× sprite, level and XP bar, its current moves, its next move and what it evolves into (level, stone or fully evolved).
