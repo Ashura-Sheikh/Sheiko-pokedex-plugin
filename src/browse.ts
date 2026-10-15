@@ -6,7 +6,7 @@
 // anything about an unseen Pokémon (its name, types, rarity or anything else hidden).
 
 import { GEN1 } from './data/gen1';
-import type { Species } from './species';
+import type { Species, Tier } from './species';
 import type { PokedexData } from './store';
 
 /** All 151 (the default, Sheikh 2026-10-15), only caught, or only unseen. */
@@ -17,10 +17,19 @@ export interface BrowseControls {
 	scope: Scope;
 	/** Case-insensitive: part of a caught Pokémon's name, or a dex number (`25`, `025`, `#025`). */
 	search: string;
+	/** A type such as `fire`, or null for Any. */
+	type: string | null;
+	/** A rarity tier, or null for Any. */
+	tier: Tier | null;
 }
 
 export function defaultControls(): BrowseControls {
-	return { scope: 'all', search: '' };
+	return { scope: 'all', search: '', type: null, tier: null };
+}
+
+/** Every type in the Gen 1 data, sorted. Listing them reveals nothing about which are caught. */
+export function allTypes(all: readonly Species[] = GEN1): string[] {
+	return [...new Set(all.flatMap((p) => p.types))].sort();
 }
 
 /** A dex number typed as `25`, `025` or `#025` (1-3 digits); null for anything else. */
@@ -53,11 +62,19 @@ export function browse(data: BrowseData, c: BrowseControls, all: readonly Specie
 	const isCaught = (dex: number) => Object.prototype.hasOwnProperty.call(data.caught, String(dex));
 	const query = c.search.trim().toLowerCase();
 	const dexQuery = parseDexQuery(query);
+	// Sheikh, 2026-10-15: with a type or rarity filter on, unseen cards are hidden in every
+	// scope, number search included (project-manager: otherwise "Fire + 4" reveals #004's type).
+	const filtering = c.type !== null || c.tier !== null;
 	const cells: BrowseCell[] = [];
 	for (const p of all) {
 		const seen = isCaught(p.dex);
 		if (c.scope === 'caught' && !seen) continue;
 		if (c.scope === 'uncaught' && seen) continue;
+		if (filtering) {
+			if (!seen) continue;
+			if (c.type !== null && !p.types.includes(c.type)) continue;
+			if (c.tier !== null && p.tier !== c.tier) continue;
+		}
 		if (query) {
 			if (dexQuery !== null) {
 				// A number is already shown on every card, so it may match an unseen one.

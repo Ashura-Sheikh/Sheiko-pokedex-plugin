@@ -1,10 +1,10 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { GEN1 } from '../data/gen1';
 import { PokedexData, formatCount, localDate } from '../store';
-import { STONE_KINDS, Species, TIERS } from '../species';
-import { BrowseControls, SCOPES, Scope, browse, defaultControls } from '../browse';
+import { STONE_KINDS, Species, TIERS, Tier } from '../species';
+import { BrowseControls, SCOPES, Scope, allTypes, browse, defaultControls } from '../browse';
 import { START_LEVEL, STONE_LABELS, currentMoves, evolutionHint, nextMove, speciesByDex, xpToNext } from '../progression';
-import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
+import { dexLabel, renderBadge, renderTypes, tierLabel, titleCase } from './art';
 import { renderXpBar } from './detail-modal';
 
 export const VIEW_TYPE_POKEDEX = 'sheiko-pokedex-view';
@@ -99,6 +99,34 @@ export class PokedexView extends ItemView {
 			this.controls = { ...this.controls, search: search.value };
 			this.renderResults();
 		});
+
+		// Type and rarity: with either on, only caught Pokémon that match are shown (#28).
+		const typeSelect = this.select(bar, 'Type', [
+			['', 'Any type'],
+			...allTypes().map((t): [string, string] => [t, titleCase(t)]),
+		]);
+		typeSelect.value = this.controls.type ?? '';
+		typeSelect.addEventListener('change', () => {
+			this.controls = { ...this.controls, type: typeSelect.value || null };
+			this.renderResults();
+		});
+		const tierSelect = this.select(bar, 'Rarity', [
+			['', 'Any rarity'],
+			...TIERS.map((t): [string, string] => [t, tierLabel(t)]),
+		]);
+		tierSelect.value = this.controls.tier ?? '';
+		tierSelect.addEventListener('change', () => {
+			const v = tierSelect.value;
+			this.controls = { ...this.controls, tier: (TIERS as readonly string[]).includes(v) ? (v as Tier) : null };
+			this.renderResults();
+		});
+	}
+
+	private select(parent: HTMLElement, label: string, options: [string, string][]): HTMLSelectElement {
+		const sel = parent.createEl('select', { cls: 'dropdown sheiko-pokedex-select' });
+		sel.setAttr('aria-label', label);
+		for (const [value, text] of options) sel.createEl('option', { value, text });
+		return sel;
 	}
 
 	private renderResults(): void {

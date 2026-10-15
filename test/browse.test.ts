@@ -3,8 +3,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BrowseControls, BrowseData, browse, defaultControls, parseDexQuery } from '../src/browse';
+import { BrowseControls, BrowseData, allTypes, browse, defaultControls, parseDexQuery } from '../src/browse';
 import { GEN1 } from '../src/data/gen1';
+import { TIERS } from '../src/species';
 
 const AT = '2026-10-15T12:00:00.000Z';
 
@@ -24,7 +25,7 @@ const dexes = (r: ReturnType<typeof browse>) => r.cells.map((c) => c.dex);
 // ---------- #32: scope ----------
 
 test('defaults: scope All (Sheikh, 2026-10-15), all 151 in Pokédex order', () => {
-	assert.deepEqual(defaultControls(), { scope: 'all', search: '' });
+	assert.deepEqual(defaultControls(), { scope: 'all', search: '', type: null, tier: null });
 	const r = browse(caught([4, 25]), defaultControls());
 	assert.equal(r.cells.length, GEN1.length);
 	assert.deepEqual(dexes(r), GEN1.map((p) => p.dex));
@@ -89,4 +90,51 @@ test('number search finds caught and unseen cards alike (numbers are already sho
 	assert.deepEqual(browse(data, controls({ search: '6' })).cells, [{ dex: 6, seen: false }]);
 	assert.deepEqual(browse(data, controls({ scope: 'caught', search: '6' })).cells, []);
 	assert.deepEqual(browse(data, controls({ search: '152' })).cells, [], 'no #152 in Gen 1');
+});
+
+// ---------- #28: type and rarity filters ----------
+
+test('type and rarity filter caught Pokémon, together with each other and with search', () => {
+	const data = caught([4, 6, 7, 25, 146]); // Charmander, Charizard, Squirtle, Pikachu, Moltres
+	assert.deepEqual(dexes(browse(data, controls({ type: 'fire' }))), [4, 6, 146]);
+	assert.deepEqual(dexes(browse(data, controls({ tier: 'legendary' }))), [146]);
+	assert.deepEqual(dexes(browse(data, controls({ type: 'fire', tier: 'legendary' }))), [146]);
+	assert.deepEqual(dexes(browse(data, controls({ type: 'fire', search: 'char' }))), [4, 6]);
+	assert.deepEqual(dexes(browse(data, controls({ type: 'flying' }))), [6, 146], 'second types count');
+});
+
+test('with any filter on, no unseen card shows, in any scope, even for a number search', () => {
+	const data = caught([4]);
+	for (const scope of ['all', 'caught', 'uncaught'] as const) {
+		for (const f of [{ type: 'fire' }, { tier: 'common' as const }]) {
+			const r = browse(data, controls({ scope, ...f }));
+			assert.ok(r.cells.every((c) => c.seen), `${scope} ${JSON.stringify(f)}`);
+		}
+	}
+	// "Fire + 6": #006 Charizard is unseen; showing its ??? card would reveal it's Fire.
+	assert.deepEqual(browse(data, controls({ type: 'fire', search: '6' })).cells, []);
+	assert.deepEqual(browse(data, controls({ type: 'water', search: '6' })).cells, []);
+	assert.equal(browse(data, controls({ scope: 'uncaught', type: 'fire' })).state, 'no-results');
+});
+
+test('filter results depend only on caught Pokémon: the same for any set of unseen ones', () => {
+	// Two Pokédexes with the same caught Pokémon give identical results for every filter.
+	const a = caught([4, 25]);
+	for (const type of allTypes()) {
+		for (const tier of [null, ...TIERS]) {
+			const r = browse(a, controls({ type, tier }));
+			const expected = [4, 25].filter((d) => {
+				const p = GEN1[d - 1]!;
+				return p.types.includes(type) && (tier === null || p.tier === tier);
+			});
+			assert.deepEqual(dexes(r), expected, `${type} ${tier}`);
+		}
+	}
+});
+
+test('the type list is every Gen 1 type, sorted', () => {
+	const types = allTypes();
+	assert.deepEqual(types, [...types].sort());
+	assert.ok(types.includes('fire') && types.includes('psychic'));
+	for (const p of GEN1) for (const t of p.types) assert.ok(types.includes(t));
 });
