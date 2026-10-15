@@ -1,7 +1,8 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { GEN1 } from '../data/gen1';
 import { PokedexData, formatCount, localDate } from '../store';
-import { STONE_KINDS, TIERS } from '../species';
+import { STONE_KINDS, Species, TIERS } from '../species';
+import { BrowseControls, SCOPES, Scope, browse, defaultControls } from '../browse';
 import { START_LEVEL, STONE_LABELS, currentMoves, evolutionHint, nextMove, speciesByDex, xpToNext } from '../progression';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
 import { renderXpBar } from './detail-modal';
@@ -38,19 +39,78 @@ export class PokedexView extends ItemView {
 		this.render();
 	}
 
-	render(): void {
-		const data = this.host.getData();
-		const el = this.contentEl;
-		el.empty();
-		el.addClass('sheiko-pokedex-view');
+	// 1.3.0 (#25): the toolbar's controls live here, on the open view only. They survive
+	// refreshes (a catch while the view is open) and are never saved to data.json.
+	private controls: BrowseControls = defaultControls();
+	private headEl: HTMLElement | null = null;
+	private toolbarEl: HTMLElement | null = null;
+	private resultsEl: HTMLElement | null = null;
 
+	/**
+	 * Redraws the header and the grid. The toolbar is built once and left alone, so a
+	 * refresh doesn't reset the controls or take focus away from the search box.
+	 */
+	render(): void {
+		const el = this.contentEl;
+		if (!this.headEl || !this.toolbarEl || !this.resultsEl || !el.contains(this.toolbarEl)) {
+			el.empty();
+			el.addClass('sheiko-pokedex-view');
+			this.headEl = el.createDiv({ cls: 'sheiko-pokedex-head' });
+			this.toolbarEl = el.createDiv({ cls: 'sheiko-pokedex-toolbar' });
+			this.resultsEl = el.createDiv({ cls: 'sheiko-pokedex-results' });
+			this.buildToolbar(this.toolbarEl);
+		}
+		this.renderHead(this.headEl);
+		this.renderResults();
+	}
+
+	private buildToolbar(bar: HTMLElement): void {
+		const scopeGroup = bar.createDiv({ cls: 'sheiko-pokedex-scope' });
+		scopeGroup.setAttr('role', 'group');
+		scopeGroup.setAttr('aria-label', 'Show');
+		const labels: Record<Scope, string> = { all: 'All', caught: 'Caught', uncaught: 'Uncaught' };
+		const buttons = new Map<Scope, HTMLButtonElement>();
+		const sync = () => {
+			for (const [s, b] of buttons) {
+				const on = this.controls.scope === s;
+				b.toggleClass('is-active', on);
+				b.setAttr('aria-pressed', on ? 'true' : 'false');
+			}
+		};
+		for (const s of SCOPES) {
+			const b = scopeGroup.createEl('button', { text: labels[s] });
+			b.addEventListener('click', () => {
+				this.controls = { ...this.controls, scope: s };
+				sync();
+				this.renderResults();
+			});
+			buttons.set(s, b);
+		}
+		sync();
+	}
+
+	private renderResults(): void {
+		const el = this.resultsEl;
+		if (!el) return;
+		el.empty();
+		const data = this.host.getData();
+		const result = browse(data, this.controls);
+		const grid = el.createDiv({ cls: 'sheiko-pokedex-grid' });
+		for (const cell of result.cells) {
+			const p = speciesByDex(cell.dex);
+			if (p) this.renderCell(grid, p, cell.seen, data);
+		}
+	}
+
+	private renderHead(head: HTMLElement): void {
+		head.empty();
+		const data = this.host.getData();
 		const caughtDex = new Set(Object.keys(data.caught).map(Number));
 		const total = Object.values(data.caught).reduce((n, c) => n + c.count, 0);
 		const isToday = data.daily.date === localDate(new Date());
 		const catchesToday = isToday ? data.daily.catches : 0;
 		const closesToday = isToday ? data.daily.closes : 0;
 
-		const head = el.createDiv({ cls: 'sheiko-pokedex-head' });
 		head.createEl('h2', { text: 'Pokedex' });
 
 		this.renderPartner(head, data);
@@ -76,39 +136,38 @@ export class PokedexView extends ItemView {
 			const chip = stones.createSpan({ cls: `sheiko-pokedex-stone stone-${k}`, text: `${STONE_LABELS[k]} × ${data.stones[k]}` });
 			if (data.stones[k] === 0) chip.addClass('is-empty');
 		}
+	}
 
-		const grid = el.createDiv({ cls: 'sheiko-pokedex-grid' });
-		for (const p of GEN1) {
-			const seen = caughtDex.has(p.dex);
-			const cell = grid.createDiv({ cls: `sheiko-pokedex-cell${seen ? ' is-caught' : ' is-unseen'}` });
-			if (data.partner === p.dex) cell.addClass('is-partner');
-			renderBadge(cell, p, seen, 'small');
-			cell.createDiv({ cls: 'sheiko-pokedex-num', text: dexLabel(p.dex) });
-			if (seen) {
-				const c = data.caught[String(p.dex)];
-				const lv = data.mons[String(p.dex)]?.level ?? START_LEVEL;
-				cell.createDiv({ cls: 'sheiko-pokedex-name', text: p.name });
-				cell.createDiv({ cls: 'sheiko-pokedex-cell-level', text: `Lv ${lv}` });
-				renderTypes(cell, p);
-				// Current moves under the card: the last 4 learned by this level (Sheikh, 2026-10-12).
-				const moves = cell.createEl('ul', { cls: 'sheiko-pokedex-moves' });
-				for (const m of currentMoves(p, lv)) moves.createEl('li', { text: m.name });
-				if (c && c.count > 1) cell.createDiv({ cls: 'sheiko-pokedex-count', text: `×${c.count}` });
-				cell.setAttr('aria-label', `${p.name}, level ${lv}, ${tierLabel(p.tier)}. Click for details.`);
-				cell.setAttr('role', 'button');
-				cell.tabIndex = 0;
-				const open = () => this.host.openDetail(p.dex);
-				cell.addEventListener('click', open);
-				cell.addEventListener('keydown', (e) => {
-					if (e.key === 'Enter' || e.key === ' ') {
-						e.preventDefault();
-						open();
-					}
-				});
-			} else {
-				cell.createDiv({ cls: 'sheiko-pokedex-name', text: '???' });
-			}
+	private renderCell(grid: HTMLElement, p: Species, seen: boolean, data: PokedexData): void {
+		const cell = grid.createDiv({ cls: `sheiko-pokedex-cell${seen ? ' is-caught' : ' is-unseen'}` });
+		if (data.partner === p.dex) cell.addClass('is-partner');
+		renderBadge(cell, p, seen, 'small');
+		cell.createDiv({ cls: 'sheiko-pokedex-num', text: dexLabel(p.dex) });
+		if (!seen) {
+			// Unseen: the number only. No name, types, tier or label (#25's no-leak rule).
+			cell.createDiv({ cls: 'sheiko-pokedex-name', text: '???' });
+			return;
 		}
+		const c = data.caught[String(p.dex)];
+		const lv = data.mons[String(p.dex)]?.level ?? START_LEVEL;
+		cell.createDiv({ cls: 'sheiko-pokedex-name', text: p.name });
+		cell.createDiv({ cls: 'sheiko-pokedex-cell-level', text: `Lv ${lv}` });
+		renderTypes(cell, p);
+		// Current moves under the card: the last 4 learned by this level (Sheikh, 2026-10-12).
+		const moves = cell.createEl('ul', { cls: 'sheiko-pokedex-moves' });
+		for (const m of currentMoves(p, lv)) moves.createEl('li', { text: m.name });
+		if (c && c.count > 1) cell.createDiv({ cls: 'sheiko-pokedex-count', text: `×${c.count}` });
+		cell.setAttr('aria-label', `${p.name}, level ${lv}, ${tierLabel(p.tier)}. Click for details.`);
+		cell.setAttr('role', 'button');
+		cell.tabIndex = 0;
+		const open = () => this.host.openDetail(p.dex);
+		cell.addEventListener('click', open);
+		cell.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				open();
+			}
+		});
 	}
 
 	/**

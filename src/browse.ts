@@ -1,0 +1,55 @@
+// Browsing the Pokedex grid (1.3.0, issue #25; Sheikh's decisions 2026-10-15).
+// Pure: takes the caught data and the toolbar's controls, returns which cells to show
+// and in what order. No Obsidian, no DOM, and it never changes the data it's given.
+//
+// The one rule that matters most: nothing shown, its order or its count may reveal
+// anything about an unseen Pokémon (its name, types, rarity or anything else hidden).
+
+import { GEN1 } from './data/gen1';
+import type { Species } from './species';
+import type { PokedexData } from './store';
+
+/** All 151 (the default, Sheikh 2026-10-15), only caught, or only unseen. */
+export type Scope = 'all' | 'caught' | 'uncaught';
+export const SCOPES: readonly Scope[] = ['all', 'caught', 'uncaught'];
+
+export interface BrowseControls {
+	scope: Scope;
+}
+
+export function defaultControls(): BrowseControls {
+	return { scope: 'all' };
+}
+
+export interface BrowseCell {
+	dex: number;
+	seen: boolean;
+}
+
+/**
+ * `nothing-caught`: Caught view with no Pokémon caught yet (offer "Show all Pokémon").
+ * `no-results`: nothing matches the controls (offer "Clear filters").
+ */
+export type BrowseState = 'ok' | 'nothing-caught' | 'no-results';
+
+export interface BrowseResult {
+	cells: BrowseCell[];
+	state: BrowseState;
+}
+
+export type BrowseData = Pick<PokedexData, 'caught' | 'mons'>;
+
+export function browse(data: BrowseData, c: BrowseControls, all: readonly Species[] = GEN1): BrowseResult {
+	const isCaught = (dex: number) => Object.prototype.hasOwnProperty.call(data.caught, String(dex));
+	const cells: BrowseCell[] = [];
+	for (const p of all) {
+		const seen = isCaught(p.dex);
+		if (c.scope === 'caught' && !seen) continue;
+		if (c.scope === 'uncaught' && seen) continue;
+		cells.push({ dex: p.dex, seen });
+	}
+	const anyCaught = Object.keys(data.caught).length > 0;
+	const state: BrowseState =
+		c.scope === 'caught' && !anyCaught ? 'nothing-caught' : cells.length === 0 ? 'no-results' : 'ok';
+	return { cells, state };
+}
