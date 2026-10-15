@@ -63,6 +63,7 @@
 }
 .sheiko-pokedex-scope { display: inline-flex; gap: var(--size-4-1); }
 .sheiko-pokedex-scope button.is-active { background-color: var(--interactive-accent); color: var(--text-on-accent); }
+.sheiko-pokedex-search { flex: 1 1 200px; min-width: 160px; }
 .sheiko-pokedex-cell {
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);

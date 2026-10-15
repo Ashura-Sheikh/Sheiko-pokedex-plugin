@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BrowseControls, BrowseData, browse, defaultControls } from '../src/browse';
+import { BrowseControls, BrowseData, browse, defaultControls, parseDexQuery } from '../src/browse';
 import { GEN1 } from '../src/data/gen1';
 
 const AT = '2026-10-15T12:00:00.000Z';
@@ -24,7 +24,7 @@ const dexes = (r: ReturnType<typeof browse>) => r.cells.map((c) => c.dex);
 // ---------- #32: scope ----------
 
 test('defaults: scope All (Sheikh, 2026-10-15), all 151 in Pokédex order', () => {
-	assert.deepEqual(defaultControls(), { scope: 'all' });
+	assert.deepEqual(defaultControls(), { scope: 'all', search: '' });
 	const r = browse(caught([4, 25]), defaultControls());
 	assert.equal(r.cells.length, GEN1.length);
 	assert.deepEqual(dexes(r), GEN1.map((p) => p.dex));
@@ -56,4 +56,37 @@ test('browse never changes the data it is given', () => {
 	const before = JSON.stringify(data);
 	for (const scope of ['all', 'caught', 'uncaught'] as const) browse(data, controls({ scope }));
 	assert.equal(JSON.stringify(data), before);
+});
+
+// ---------- #27: search ----------
+
+test('dex numbers: 25, 025 and #025; anything else is not a number', () => {
+	for (const q of ['25', '025', '#025', ' #25 ']) assert.equal(parseDexQuery(q), 25, q);
+	for (const q of ['', '#', '0', '1000', 'char', '25a', '2 5']) assert.equal(parseDexQuery(q), null, q);
+});
+
+test('name search: case-insensitive, partial, caught only', () => {
+	const data = caught([4, 5, 25]); // Charmander, Charmeleon, Pikachu (Charizard #6 unseen)
+	assert.deepEqual(dexes(browse(data, controls({ search: 'CHAR' }))), [4, 5]);
+	assert.deepEqual(dexes(browse(data, controls({ search: 'meleon' }))), [5]);
+});
+
+test('a name search never shows an unseen Pokémon, in any scope', () => {
+	const data = caught([4]);
+	for (const scope of ['all', 'caught', 'uncaught'] as const) {
+		// "zard" only matches Charizard, which is unseen: nothing, not a ??? card.
+		const r = browse(data, controls({ scope, search: 'zard' }));
+		assert.deepEqual(r, { cells: [], state: 'no-results' }, scope);
+	}
+	// Every unseen name: none ever matches.
+	const none = caught([]);
+	for (const p of GEN1) assert.equal(browse(none, controls({ search: p.name })).cells.length, 0, p.name);
+});
+
+test('number search finds caught and unseen cards alike (numbers are already shown)', () => {
+	const data = caught([25]);
+	assert.deepEqual(browse(data, controls({ search: '#025' })).cells, [{ dex: 25, seen: true }]);
+	assert.deepEqual(browse(data, controls({ search: '6' })).cells, [{ dex: 6, seen: false }]);
+	assert.deepEqual(browse(data, controls({ scope: 'caught', search: '6' })).cells, []);
+	assert.deepEqual(browse(data, controls({ search: '152' })).cells, [], 'no #152 in Gen 1');
 });

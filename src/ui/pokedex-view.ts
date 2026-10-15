@@ -87,6 +87,18 @@ export class PokedexView extends ItemView {
 			buttons.set(s, b);
 		}
 		sync();
+
+		const search = bar.createEl('input', {
+			cls: 'sheiko-pokedex-search',
+			type: 'search',
+			placeholder: 'Search caught by name, or #number',
+		});
+		search.setAttr('aria-label', 'Search caught Pokémon by name, or any Pokémon by number');
+		search.value = this.controls.search;
+		search.addEventListener('input', () => {
+			this.controls = { ...this.controls, search: search.value };
+			this.renderResults();
+		});
 	}
 
 	private renderResults(): void {
