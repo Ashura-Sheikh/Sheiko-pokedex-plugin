@@ -21,7 +21,7 @@ You need Obsidian desktop with [TaskNotes](https://github.com/callumalpass/taskn
 
 If either required plugin is missing, a notice tells you, and closes won't earn Pokémon until it's enabled.
 
-![Settings → Community plugins with Sheiko Pokedex v1.0.0 installed and enabled](images/install-plugins.png)
+![Settings → Community plugins with Sheiko Pokedex v1.3.0 installed and enabled](images/install-plugins.png)
 
 ## 2. Close a task, catch a Pokémon
 
