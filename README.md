@@ -29,7 +29,7 @@ Install and enable [TaskNotes](https://github.com/callumalpass/tasknotes) and [S
 2. Create the folder `<your vault>/.obsidian/plugins/sheiko-pokedex/` and put the 3 files in it.
 3. In Obsidian, go to **Settings → Community plugins**, refresh the list, and enable **Sheiko Pokedex**.
 
-   ![Settings → Community plugins with Sheiko Pokedex v1.0.0 installed and enabled](docs/images/install-plugins.png)
+   ![Settings → Community plugins with Sheiko Pokedex v1.3.0 installed and enabled](docs/images/install-plugins.png)
 
 ### Option 3: build from source
 
