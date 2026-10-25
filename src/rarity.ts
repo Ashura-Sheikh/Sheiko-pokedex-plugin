@@ -1,7 +1,6 @@
 // Pure rarity logic: SLA check, score, seeded random draw, species pick.
 // No Obsidian imports, so everything here is unit-tested directly.
 
-import { GEN1 } from './data/gen1';
 import { Species, Tier, TIERS } from './species';
 
 // ---------- SLA targets (fixed here; not read from the vault) ----------
@@ -164,7 +163,7 @@ export function typePool(contexts: string[], map: ContextTypes): Set<string> {
 }
 
 /** Species of the tier that share a type with the pool; the whole tier if none do (or the pool is empty). */
-export function candidates(tier: Tier, pool: Set<string>, all: readonly Species[] = GEN1): Species[] {
+export function candidates(tier: Tier, pool: Set<string>, all: readonly Species[]): Species[] {
 	const inTier = all.filter((p) => p.tier === tier);
 	if (pool.size === 0) return inTier;
 	const matched = inTier.filter((p) => p.types.some((t) => pool.has(t)));
@@ -190,7 +189,8 @@ export interface DrawInput {
 	contexts: string[];
 }
 
-export function draw(input: DrawInput, map: ContextTypes, all: readonly Species[] = GEN1): Draw {
+/** `all`: the species that can be caught, i.e. the unlocked Gens (2.0.0). */
+export function draw(input: DrawInput, map: ContextTypes, all: readonly Species[]): Draw {
 	const s = catchScore(input.scoreSum, input.closes, input.closesToday);
 	const rand = seededRandom(hashString(input.seed));
 	const tier = pickTier(rand, s);

@@ -1,4 +1,4 @@
-import { Menu, Notice, Plugin, PluginSettingTab, SettingDefinitionItem, TFile, App, normalizePath, requestUrl } from 'obsidian';
+import { Menu, Notice, Plugin, PluginSettingTab, SettingDefinitionItem, SettingGroupItem, TFile, App, normalizePath, requestUrl } from 'obsidian';
 import { parseContextTypes } from './rarity';
 import {
 	CloseInput,
@@ -16,8 +16,11 @@ import {
 	StarterResult,
 	DEFAULT_SETTINGS,
 	OLD_DEFAULT_DAILY_CAP,
+	applyUnlock,
 	chooseDailyCap,
 	claimStarterPokemon,
+	markAnnounced,
+	unlockToAnnounce,
 	claimStarterStones,
 	renamePath,
 	setPartner,
@@ -27,18 +30,22 @@ import {
 	useStarterXp,
 } from './store';
 import { registerTestCommands } from './dev-tools';
+import { ALL_SPECIES, GEN_RANGES, speciesUpTo } from './gens';
 import { ANIM_MODE_LABELS, parseAnimMode } from './partner-anim';
 import { ConfirmModal } from './ui/confirm-modal';
 import {
+	EvolveUse,
 	START_LEVEL,
 	STONE_LABELS,
+	TRADE_ITEM_LABELS,
+	useLabel,
 	learnedText,
 	levelEvolutionAvailable,
 	readyLevelEvolution,
 	speciesByDex,
 	xpToNext,
 } from './progression';
-import { StoneKind } from './species';
+import { Species, TradeItemKind } from './species';
 import { SHEIKO_ID, Watcher, sheikoEnabled } from './watcher';
 import { RewardInfo, RewardModal } from './ui/reward-modal';
 import { PokedexView, VIEW_TYPE_POKEDEX } from './ui/pokedex-view';
@@ -46,12 +53,15 @@ import { EvolveModal } from './ui/evolve-modal';
 import { EvolutionSceneModal } from './ui/evolution-scene-modal';
 import { DetailModal } from './ui/detail-modal';
 import { PartnerSuggestModal, SpeciesSuggestModal } from './ui/partner-suggest';
-import { setSprites } from './ui/art';
+import { setSprites, spriteFor } from './ui/art';
 import {
 	SPRITES_INTRO,
-	SPRITE_COUNT,
+	SpriteBucket,
+	bucketDexes,
 	checkSprite,
 	downloadSprites,
+	missingDexes,
+	releasedBuckets,
 	saveSpritesAtomically,
 	spriteFileName,
 	spriteInfo,
@@ -132,6 +142,8 @@ export default class SheikoPokedexPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(async () => {
 			this.announceCapUpgrade();
+			// 2.0.0: a Gen unlocked on load (existing users on update) gets its notice via commit().
+			if (unlockToAnnounce(this.data) !== null) void this.enqueue(() => this.commit(this.data));
 			const ok = await this.watcher.start();
 			if (!ok) {
 				new Notice('Sheiko Pokedex: TaskNotes is not installed and enabled, so no tasks are watched.');
@@ -158,10 +170,24 @@ export default class SheikoPokedexPlugin extends Plugin {
 
 	/** Saves new data and refreshes every place it shows. */
 	private async commit(next: PokedexData): Promise<void> {
-		this.data = next;
+		// 2.0.0 (#45): every change goes through here, so this is where a Gen unlocks.
+		this.data = applyUnlock(next);
+		this.announceUnlock();
 		await this.saveData(this.data);
 		this.refreshViews();
 		this.updateStatusBar();
+	}
+
+	/** One notice per unlocked Gen, including Gen 2 unlocked on the 2.0.0 update. Marks it shown. */
+	private announceUnlock(): void {
+		const gen = unlockToAnnounce(this.data);
+		if (gen === null) return;
+		const r = GEN_RANGES[gen];
+		new Notice(
+			`Sheiko Pokedex: Gen ${gen} unlocked!${r ? ` Pokémon #${r.first}–${r.last} can now be caught, and new evolutions and items are open.` : ''}`,
+			12000,
+		);
+		this.data = markAnnounced(this.data);
 	}
 
 	/** 1.4.0 (#39): tells users still on the old limit of 3, once, that the default is now 5. */
@@ -210,6 +236,13 @@ export default class SheikoPokedexPlugin extends Plugin {
 		return ` · +${xp.gained} XP to ${name}.${up}${learnedText(xp)}`;
 	}
 
+	/** " Found a Metal Coat!" for Trade Items a close found (2.0.0), or "". */
+	private itemsText(items: TradeItemKind[] | undefined): string {
+		if (!items?.length) return '';
+		const names = items.map((k) => TRADE_ITEM_LABELS[k]);
+		return ` Found ${names.length === 1 ? `a ${names[0]!}` : `${names.length} Trade Items: ${names.join(', ')}`}!`;
+	}
+
 	private announce(decision: Decision, file: TFile): void {
 		switch (decision.kind) {
 			case 'already':
@@ -221,7 +254,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 				// 1.2.0 (#26): no catch progress over the limit, but the partner still earns XP.
 				new Notice(
 					`Sheiko Pokedex: today's limit of ${decision.cap} catches is reached. ` +
-						`No catch progress from "${file.basename}"${this.xpText(decision.xp)}`,
+						`No catch progress from "${file.basename}"${this.xpText(decision.xp)}${this.itemsText(decision.items)}`,
 				);
 				this.maybeAskToEvolve(decision.xp);
 				return;
@@ -229,7 +262,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 				// The target stays hidden (Sheikh, 2026-10-12): show progress, not the goal.
 				new Notice(
 					`Sheiko Pokedex: close ${formatCount(decision.closes)} toward your next catch` +
-						`${decision.bulk ? ' (bulk close: half credit)' : ''}${this.xpText(decision.xp)}`,
+						`${decision.bulk ? ' (bulk close: half credit)' : ''}${this.xpText(decision.xp)}${this.itemsText(decision.items)}`,
 				);
 				this.maybeAskToEvolve(decision.xp);
 				return;
@@ -241,10 +274,11 @@ export default class SheikoPokedexPlugin extends Plugin {
 					taskName: file.basename,
 					xp: decision.xp,
 					stone: decision.stone,
+					items: decision.items ?? [],
 				};
 				if (!this.data.settings.showRewardWindow) {
 					const stone = decision.stone ? ` Found a ${STONE_LABELS[decision.stone]}!` : '';
-					new Notice(`You caught ${decision.draw.species.name}! (${decision.draw.tier})${this.xpText(decision.xp)}${stone}`);
+					new Notice(`You caught ${decision.draw.species.name}! (${decision.draw.tier})${this.xpText(decision.xp)}${stone}${this.itemsText(decision.items)}`);
 				} else {
 					this.showWindow(() => new RewardModal(this.app, info, () => void this.openPokedex()).open());
 				}
@@ -267,7 +301,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const check = manual ? levelEvolutionAvailable : readyLevelEvolution;
 		const mon = this.data.mons[String(dex)];
 		const from = speciesByDex(dex);
-		const to = mon ? check(dex, mon) : null;
+		const to = mon ? check(dex, mon, this.unlocked()) : null;
 		if (!from || !to) return;
 		// Evolution scene flow (Sheikh, 2026-10-12, option B): the scene starts straight away with
 		// "What? X is evolving!"; B, Stop or closing the window stops it.
@@ -279,7 +313,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 					const yes = outcome === 'evolved';
 					// Re-check against current data: it may have changed while the window was waiting.
 					const now = this.data.mons[String(from.dex)];
-					if (!now || check(from.dex, now)?.dex !== to.dex) return;
+					if (!now || check(from.dex, now, this.unlocked())?.dex !== to.dex) return;
 					if (yes) {
 						const next = evolve(this.data, from.dex, to.dex, new Date());
 						if (next) {
@@ -296,6 +330,11 @@ export default class SheikoPokedexPlugin extends Plugin {
 	}
 
 	/** Calm evolution scene: the plugin setting, or the system's reduced-motion setting. */
+	/** The species of the unlocked Gens (2.0.0): what can be caught, evolved into or hinted. */
+	private unlocked(): readonly Species[] {
+		return speciesUpTo(this.data.unlockedGen);
+	}
+
 	private calmEvolution(): boolean {
 		return this.data.settings.calmEvolution || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	}
@@ -463,29 +502,32 @@ export default class SheikoPokedexPlugin extends Plugin {
 	}
 
 	private openDetail(dex: number): void {
-		new DetailModal(this.app, dex, this.data, {
+		new DetailModal(this.app, dex, this.data, this.unlocked(), {
 			makePartner: (d) => this.makePartner(d),
-			useStone: (from, to, stone) => this.askStoneEvolution(from, to, stone),
+			useItem: (from, to, use) => this.askItemEvolution(from, to, use),
 		}).open();
 	}
 
-	private askStoneEvolution(fromDex: number, toDex: number, stone: StoneKind): void {
+	private askItemEvolution(fromDex: number, toDex: number, use: EvolveUse): void {
 		const from = speciesByDex(fromDex);
 		const to = speciesByDex(toDex);
 		if (!from || !to) return;
 		this.showWindow(() =>
-			new EvolveModal(this.app, from, to, stone, (yes) => {
+			new EvolveModal(this.app, from, to, use, (yes) => {
 				if (!yes) return;
-				// Confirmed: play the Evolution scene. Stone evolutions can't be stopped, as in the game.
+				// Confirmed: play the Evolution scene. Stone and item evolutions can't be stopped, as in the game.
 				this.showWindow(() =>
 					new EvolutionSceneModal(this.app, from, to, {
 						cancellable: false,
 						calm: this.calmEvolution(),
 						onResult: () =>
 							void this.enqueue(async () => {
-								const next = evolve(this.data, fromDex, toDex, new Date(), stone);
+								const next =
+									'stone' in use
+										? evolve(this.data, fromDex, toDex, new Date(), use.stone)
+										: evolve(this.data, fromDex, toDex, new Date(), undefined, use.item);
 								if (!next) {
-									new Notice(`Sheiko Pokedex: no ${STONE_LABELS[stone]} left.`);
+									new Notice(`Sheiko Pokedex: no ${useLabel(use)} left.`);
 									return;
 								}
 								await this.commit(next);
@@ -512,7 +554,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		}
 		const mon = this.data.mons[String(dex)] ?? { level: START_LEVEL, xp: 0 };
 		this.statusBar.setText(`${p.name} Lv ${mon.level}`);
-		const waiting = levelEvolutionAvailable(dex, mon);
+		const waiting = levelEvolutionAvailable(dex, mon, this.unlocked());
 		const evo = waiting ? ` · can evolve into ${waiting.name}` : '';
 		this.statusBar.setAttr(
 			'aria-label',
@@ -532,7 +574,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		menu.addItem((i) => i.setTitle('Choose partner').setIcon('user').onClick(() => this.choosePartner()));
 		const dex = this.data.partner;
 		const mon = dex !== null ? this.data.mons[String(dex)] : undefined;
-		const to = dex !== null && mon ? levelEvolutionAvailable(dex, mon) : null;
+		const to = dex !== null && mon ? levelEvolutionAvailable(dex, mon, this.unlocked()) : null;
 		if (dex !== null && to) {
 			menu.addItem((i) =>
 				i
@@ -581,21 +623,37 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.spriteUrls = [];
 	}
 
-	/** Loads the saved sprites. All 151 must be there and pass the checks, or it stays on badges. */
-	async loadSprites(): Promise<boolean> {
+	/** Reads the saved sprites that pass the checks. Missing or bad files are left out. */
+	private async readSavedSprites(): Promise<Map<number, Uint8Array>> {
 		const adapter = this.app.vault.adapter;
 		const dir = this.spritesDir();
+		const out = new Map<number, Uint8Array>();
+		if (!(await adapter.exists(dir))) return out;
+		for (const s of ALL_SPECIES) {
+			const path = `${dir}/${spriteFileName(s.dex)}`;
+			if (!(await adapter.exists(path))) continue;
+			const bytes = new Uint8Array(await adapter.readBinary(path));
+			if (!checkSprite(bytes)) out.set(s.dex, bytes);
+		}
+		return out;
+	}
+
+	/**
+	 * Loads the saved sprites, one bucket at a time (2.0.0): a bucket is used only if every sprite
+	 * in it is there and passes the checks; otherwise that bucket stays on badges.
+	 */
+	async loadSprites(): Promise<boolean> {
 		this.clearSpriteUrls();
 		try {
-			if (!(await adapter.exists(dir))) return false;
+			const saved = await this.readSavedSprites();
 			const urls = new Map<number, string>();
-			for (let dex = 1; dex <= SPRITE_COUNT; dex++) {
-				const path = `${dir}/${spriteFileName(dex)}`;
-				if (!(await adapter.exists(path))) throw new Error(`missing ${spriteFileName(dex)}`);
-				const bytes = new Uint8Array(await adapter.readBinary(path));
-				const problem = checkSprite(bytes);
-				if (problem) throw new Error(`${spriteFileName(dex)}: ${problem}`);
-				urls.set(dex, URL.createObjectURL(new Blob([bytes], { type: 'image/png' })));
+			for (const b of releasedBuckets()) {
+				const dexes = bucketDexes(b);
+				if (!dexes.every((d) => saved.has(d))) {
+					if (dexes.some((d) => saved.has(d))) console.warn(`[Sheiko Pokedex] ${b.label} sprites incomplete, showing badges for them.`);
+					continue;
+				}
+				for (const d of dexes) urls.set(d, URL.createObjectURL(new Blob([saved.get(d)!.slice()], { type: 'image/png' })));
 			}
 			if (this.unloading) {
 				for (const url of urls.values()) URL.revokeObjectURL(url);
@@ -603,7 +661,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 			}
 			this.spriteUrls = [...urls.values()];
 			setSprites(urls);
-			return true;
+			return urls.size > 0;
 		} catch (e) {
 			console.warn('[Sheiko Pokedex] Saved sprites not used, showing badges:', e);
 			this.clearSpriteUrls();
@@ -614,27 +672,51 @@ export default class SheikoPokedexPlugin extends Plugin {
 		}
 	}
 
-	/** Downloads all 151 sprites, checks them, then saves them. On any failure nothing is saved. */
-	async downloadAndSaveSprites(onProgress: (done: number, total: number) => void): Promise<void> {
+	/** Dex numbers whose sprite is loaded now. */
+	loadedSpriteDexes(): Set<number> {
+		const out = new Set<number>();
+		for (const s of ALL_SPECIES) if (spriteFor(s.dex)) out.add(s.dex);
+		return out;
+	}
+
+	/**
+	 * Downloads one bucket's missing sprites, checks them, then saves them with the ones already
+	 * saved (2.0.0, #47). On any failure nothing is saved and nothing already saved changes.
+	 */
+	async downloadAndSaveSprites(bucket: SpriteBucket, onProgress: (done: number, total: number) => void): Promise<void> {
 		if (this.spriteDownloadRunning) return;
 		this.spriteDownloadRunning = true;
 		try {
-			const result = await downloadSprites({
-				fetchBytes: async (url) => (await requestUrl({ url, throw: true })).arrayBuffer,
-				sleep: (ms) => new Promise((r) => window.setTimeout(r, ms)),
-				onProgress,
-				cancelled: () => this.unloading,
-			});
-			if (!result.ok) {
-				this.lastSpriteError = result.error;
-				new Notice(`Sheiko Pokedex: sprites not downloaded. ${result.error} Placeholder badges stay.`, 10000);
-				return;
+			const saved = await this.readSavedSprites();
+			const missing = missingDexes(bucket, new Set(saved.keys()));
+			if (missing.length) {
+				const result = await downloadSprites(
+					{
+						fetchBytes: async (url) => (await requestUrl({ url, throw: true })).arrayBuffer,
+						sleep: (ms) => new Promise((r) => window.setTimeout(r, ms)),
+						onProgress,
+						cancelled: () => this.unloading,
+					},
+					missing,
+				);
+				if (!result.ok) {
+					this.lastSpriteError = result.error;
+					new Notice(`Sheiko Pokedex: sprites not downloaded. ${result.error} Placeholder badges stay.`, 10000);
+					return;
+				}
+				// All-or-nothing (0.9.1): the saved sprites plus the new ones go into a temp folder, which is
+				// swapped in only when every file is written; on failure nothing changes.
+				for (const [d, bytes] of result.sprites) saved.set(d, bytes);
+				await saveSpritesAtomically(this.app.vault.adapter, this.spritesDir(), saved);
 			}
-			// All-or-nothing (0.9.1): written to a temp folder, then swapped in; on failure nothing changes.
-			await saveSpritesAtomically(this.app.vault.adapter, this.spritesDir(), result.sprites);
 			const ok = await this.loadSprites();
-			this.lastSpriteError = ok ? null : 'Saved but could not be loaded. See the developer console.';
-			new Notice(ok ? `Sheiko Pokedex: ${SPRITE_COUNT} sprites downloaded.` : 'Sheiko Pokedex: sprites saved but could not be loaded. See the console.');
+			const all = bucketDexes(bucket).every((d) => this.loadedSpriteDexes().has(d));
+			this.lastSpriteError = ok && all ? null : 'Saved but could not be loaded. See the developer console.';
+			new Notice(
+				ok && all
+					? `Sheiko Pokedex: ${bucket.label} sprites ready (${missing.length} downloaded).`
+					: 'Sheiko Pokedex: sprites saved but could not be loaded. See the console.',
+			);
 		} catch (e) {
 			console.error('[Sheiko Pokedex] Sprite download failed:', e);
 			this.lastSpriteError = `Could not save the sprites: ${e instanceof Error ? e.message : String(e)}`;
@@ -889,14 +971,47 @@ class PokedexSettingTab extends PluginSettingTab {
 
 	/** Sprites (DB): states the network call, the source and the rules before anything is fetched. */
 	private spritesGroup(): SettingDefinitionItem<ControlKey> {
-		const loaded = this.plugin.spritesLoaded();
+		const loadedSet = this.plugin.loadedSpriteDexes();
+		const loaded = loadedSet.size;
 		const error = this.plugin.lastSpriteError;
+		const running = this.plugin.spriteDownloadRunning;
+		// 2.0.0 (#47): one row per released bucket (Gen 1; Gens 2–4), each fetching only what's missing.
+		const bucketRows = releasedBuckets().map((b): SettingGroupItem<ControlKey> => {
+			const total = bucketDexes(b).length;
+			const missing = missingDexes(b, loadedSet).length;
+			return {
+				name: missing === 0 ? `${b.label}: all ${total} sprites` : `${b.label}: ${total - missing} of ${total} sprites`,
+				render: (setting) => {
+					setting.setDesc(
+						missing === 0
+							? 'Downloaded.'
+							: `Downloads the ${missing} you don't have. Keep this window open until it finishes.`,
+					);
+					if (missing > 0) {
+						setting.addButton((btn) => {
+							btn.setButtonText(running ? 'Downloading…' : `Download ${b.label}`)
+								.setCta()
+								.setDisabled(running)
+								.onClick(() => {
+									btn.setDisabled(true);
+									void this.plugin
+										.downloadAndSaveSprites(b, (done, n) => {
+											btn.setButtonText(`Downloading ${done}/${n}…`);
+										})
+										.then(() => this.update());
+								});
+						});
+					}
+				},
+			};
+		});
 		return {
 			type: 'group',
 			heading: 'Sprites',
 			items: [
 				{ name: 'Optional sprites', desc: SPRITES_INTRO },
 				...spriteInfo(this.plugin.spritesDir()).map((info) => ({ name: info.name, desc: info.desc })),
+				...bucketRows,
 				{
 					name: loaded ? `Downloaded: ${loaded} sprites` : 'Not downloaded: showing placeholder badges',
 					render: (setting) => {
@@ -905,7 +1020,7 @@ class PokedexSettingTab extends PluginSettingTab {
 								? 'Remove deletes the sprites folder and brings the badges back. You can download again at any time.'
 								: error
 									? `Last download failed, nothing was saved: ${error}`
-									: 'Takes about 30 seconds. Keep this window open until it finishes.',
+									: 'Nothing is downloaded until you press a Download button above.',
 						);
 						if (loaded) {
 							setting.addButton((b) =>
@@ -913,20 +1028,6 @@ class PokedexSettingTab extends PluginSettingTab {
 									void this.plugin.removeSprites().then(() => this.update());
 								}),
 							);
-						} else {
-							setting.addButton((b) => {
-								b.setButtonText(this.plugin.spriteDownloadRunning ? 'Downloading…' : 'Download sprites')
-									.setCta()
-									.setDisabled(this.plugin.spriteDownloadRunning)
-									.onClick(() => {
-										b.setDisabled(true);
-										void this.plugin
-											.downloadAndSaveSprites((done, total) => {
-												b.setButtonText(`Downloading ${done}/${total}…`);
-											})
-											.then(() => this.update());
-									});
-							});
 						}
 					},
 				},

@@ -16,6 +16,10 @@ import {
 	xpForClose,
 	xpToNext,
 } from '../src/progression';
+import { noTradeItems } from '../src/progression';
+import { speciesUpTo } from '../src/gens';
+/** Gen 1's species: these tests check Gen 1 behaviour, as before 2.0.0. */
+const GEN1 = speciesUpTo(1);
 import {
 	CloseInput,
 	PokedexData,
@@ -190,7 +194,7 @@ test('over-the-limit XP can level the partner up and make an evolution ready', (
 	assert.equal(r.decision.kind, 'capped');
 	if (r.decision.kind !== 'capped') return;
 	assert.deepEqual([r.decision.xp?.fromLevel, r.decision.xp?.toLevel], [15, 16]);
-	assert.equal(readyLevelEvolution(4, r.data.mons['4']!)?.name, 'Charmeleon', 'the evolution prompt can follow');
+	assert.equal(readyLevelEvolution(4, r.data.mons['4']!, GEN1)?.name, 'Charmeleon', 'the evolution prompt can follow');
 });
 
 test('a limit of 0 means every close is over the limit, and still gives XP', () => {
@@ -243,26 +247,26 @@ test('a stone found on a catch lands in the inventory', () => {
 // ---------- Evolution ----------
 
 test('Gen 1 evolution links: Charmander → Charmeleon at 16; Eevee has three stone forms; Kadabra trades', () => {
-	assert.deepEqual(evolutionsOf(4).map((s) => s.name), ['Charmeleon']);
+	assert.deepEqual(evolutionsOf(4, GEN1).map((s) => s.name), ['Charmeleon']);
 	assert.deepEqual(
-		stoneEvolutions(133, noStones()).map((o) => `${o.to.name}:${o.stone}`),
+		stoneEvolutions(133, noStones(), GEN1).map((o) => `${o.to.name}:${o.stone}`),
 		['Vaporeon:water', 'Jolteon:thunder', 'Flareon:fire'],
 	);
-	assert.deepEqual(stoneEvolutions(64, noStones()).map((o) => `${o.to.name}:${o.stone}`), ['Alakazam:trade']);
-	assert.equal(readyLevelEvolution(4, { level: 15, xp: 0 }), null);
-	assert.equal(readyLevelEvolution(4, { level: 16, xp: 0 })?.name, 'Charmeleon');
-	assert.equal(readyLevelEvolution(133, { level: 99, xp: 0 }), null, 'stone-only: never a level prompt');
-	assert.equal(readyLevelEvolution(150, { level: 99, xp: 0 }), null, 'legendaries do not evolve');
+	assert.deepEqual(stoneEvolutions(64, noStones(), GEN1).map((o) => `${o.to.name}:${o.stone}`), ['Alakazam:trade']);
+	assert.equal(readyLevelEvolution(4, { level: 15, xp: 0 }, GEN1), null);
+	assert.equal(readyLevelEvolution(4, { level: 16, xp: 0 }, GEN1)?.name, 'Charmeleon');
+	assert.equal(readyLevelEvolution(133, { level: 99, xp: 0 }, GEN1), null, 'stone-only: never a level prompt');
+	assert.equal(readyLevelEvolution(150, { level: 99, xp: 0 }, GEN1), null, 'legendaries do not evolve');
 });
 
 test('cancelled evolution is asked again only at the next level', () => {
 	let data = setPartner(withCaught([4]), 4);
 	data.mons['4'] = { level: 16, xp: 0 };
 	data = declineEvolution(data, 4);
-	assert.equal(readyLevelEvolution(4, data.mons['4']!), null);
+	assert.equal(readyLevelEvolution(4, data.mons['4']!, GEN1), null);
 	data.mons['4'] = addXp(data.mons['4']!, xpToNext(16)).mon;
 	assert.equal(data.mons['4']!.level, 17);
-	assert.equal(readyLevelEvolution(4, data.mons['4']!)?.name, 'Charmeleon');
+	assert.equal(readyLevelEvolution(4, data.mons['4']!, GEN1)?.name, 'Charmeleon');
 });
 
 test('evolving keeps both forms, carries the level, moves the partner, clears the cancel mark', () => {
@@ -368,12 +372,14 @@ test('test: give partner XP levels it up and can make an evolution ready; no par
 	let data = setPartner(testAddPokemon(freshData(NOW), 4, NOW), 4);
 	for (let i = 0; i < 3; i++) data = testGivePartnerXp(data, 500).data;
 	assert.ok(data.mons['4']!.level >= 16, `level ${data.mons['4']!.level}`);
-	assert.equal(readyLevelEvolution(4, data.mons['4']!)?.name, 'Charmeleon');
+	assert.equal(readyLevelEvolution(4, data.mons['4']!, GEN1)?.name, 'Charmeleon');
 });
 
 test('test: one of each stone, then a stone evolution works', () => {
 	let data = testGiveEachStone(testAddPokemon(freshData(NOW), 133, NOW));
-	assert.deepEqual(Object.values(data.stones), [1, 1, 1, 1, 1, 1]);
+	// Development builds only: every stone and Trade Item, the Gen 2 ones included.
+	assert.deepEqual(Object.values(data.stones), [1, 1, 1, 1, 1, 1, 1]);
+	assert.deepEqual(Object.values(data.tradeItems), [1, 1, 1, 1, 1, 1]);
 	data = evolve(data, 133, 135, NOW, 'thunder')!;
 	assert.equal(data.caught['135']?.count, 1, 'Jolteon');
 	assert.equal(data.stones.thunder, 0);
@@ -393,24 +399,24 @@ test('test: adding a Pokémon is not a close (no ledger, progress or daily chang
 
 test('"Evolve now" still offers an evolution after a Cancel; the automatic prompt does not', () => {
 	const mon = { level: 16, xp: 0, declinedAt: 16 };
-	assert.equal(readyLevelEvolution(4, mon), null, 'no automatic re-ask at the same level');
-	assert.equal(levelEvolutionAvailable(4, mon)?.name, 'Charmeleon', 'manual Evolve now is available');
-	assert.equal(levelEvolutionAvailable(4, { level: 15, xp: 0 }), null, 'not before level 16');
-	assert.equal(levelEvolutionAvailable(133, { level: 99, xp: 0 }), null, 'stone-only Pokémon never');
+	assert.equal(readyLevelEvolution(4, mon, GEN1), null, 'no automatic re-ask at the same level');
+	assert.equal(levelEvolutionAvailable(4, mon, GEN1)?.name, 'Charmeleon', 'manual Evolve now is available');
+	assert.equal(levelEvolutionAvailable(4, { level: 15, xp: 0 }, GEN1), null, 'not before level 16');
+	assert.equal(levelEvolutionAvailable(133, { level: 99, xp: 0 }, GEN1), null, 'stone-only Pokémon never');
 });
 
 // ---------- Partner card: evolution hint ----------
 
 test('evolution hint covers level, ready, stones, trade, fully evolved and legendary', () => {
 	const stones = { ...noStones(), thunder: 1, water: 2 };
-	assert.equal(evolutionHint(4, { level: 12, xp: 0 }, stones), 'Evolves into Charmeleon at Lv 16');
-	assert.equal(evolutionHint(4, { level: 18, xp: 0 }, stones), 'Ready to evolve into Charmeleon');
-	assert.equal(evolutionHint(25, newMon(), stones), 'Thunder Stone → Raichu (have 1)');
+	assert.equal(evolutionHint(4, { level: 12, xp: 0 }, stones, noTradeItems(), GEN1), 'Evolves into Charmeleon at Lv 16');
+	assert.equal(evolutionHint(4, { level: 18, xp: 0 }, stones, noTradeItems(), GEN1), 'Ready to evolve into Charmeleon');
+	assert.equal(evolutionHint(25, newMon(), stones, noTradeItems(), GEN1), 'Thunder Stone → Raichu (have 1)');
 	assert.equal(
-		evolutionHint(133, newMon(), stones),
+		evolutionHint(133, newMon(), stones, noTradeItems(), GEN1),
 		'Water Stone → Vaporeon (have 2) · Thunder Stone → Jolteon (have 1) · Fire Stone → Flareon (have 0)',
 	);
-	assert.equal(evolutionHint(64, newMon(), noStones()), 'Trade Stone → Alakazam (have 0)');
-	assert.equal(evolutionHint(6, newMon(), stones), 'Fully evolved');
-	assert.equal(evolutionHint(145, newMon(), stones), 'Fully evolved', 'legendary');
+	assert.equal(evolutionHint(64, newMon(), noStones(), noTradeItems(), GEN1), 'Trade Stone → Alakazam (have 0)');
+	assert.equal(evolutionHint(6, newMon(), stones, noTradeItems(), GEN1), 'Fully evolved');
+	assert.equal(evolutionHint(145, newMon(), stones, noTradeItems(), GEN1), 'Fully evolved', 'legendary');
 });

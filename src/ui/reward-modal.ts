@@ -1,8 +1,8 @@
 import { App, Modal } from 'obsidian';
 import { Draw } from '../rarity';
 import { XpGain, formatCount } from '../store';
-import { STONE_LABELS, learnedText, speciesByDex } from '../progression';
-import { StoneKind } from '../species';
+import { STONE_LABELS, TRADE_ITEM_LABELS, learnedText, speciesByDex } from '../progression';
+import { StoneKind, TradeItemKind } from '../species';
 import { dexLabel, renderBadge, renderTypes, tierLabel } from './art';
 
 export interface RewardInfo {
@@ -12,6 +12,8 @@ export interface RewardInfo {
 	taskName: string;
 	xp: XpGain | null;
 	stone: StoneKind | null;
+	/** Trade Items this close found (2.0.0). */
+	items: TradeItemKind[];
 }
 
 export class RewardModal extends Modal {
@@ -25,7 +27,7 @@ export class RewardModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
-		const { draw, duplicate, count, taskName, xp, stone } = this.info;
+		const { draw, duplicate, count, taskName, xp, stone, items } = this.info;
 		const s = draw.species;
 		contentEl.addClass('sheiko-pokedex-reward');
 		contentEl.createEl('p', { cls: 'sheiko-pokedex-reward-task', text: `Closed: ${taskName}` });
@@ -56,6 +58,9 @@ export class RewardModal extends Modal {
 		}
 		if (stone) {
 			contentEl.createEl('p', { cls: 'sheiko-pokedex-stone-found', text: `You found a ${STONE_LABELS[stone]}!` });
+		}
+		for (const k of items) {
+			contentEl.createEl('p', { cls: 'sheiko-pokedex-stone-found', text: `You found a ${TRADE_ITEM_LABELS[k]}!` });
 		}
 		const buttons = contentEl.createDiv({ cls: 'modal-button-container' });
 		buttons.createEl('button', { text: 'Open Pokedex' }).addEventListener('click', () => {

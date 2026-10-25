@@ -311,3 +311,20 @@
 	.sheiko-pokedex-hero-art[data-motion] .sheiko-pokedex-badge { animation: none; }
 	.sheiko-pokedex-anim-layer { display: none; }
 }
+
+/* Gen 2 (2.0.0, #46). Locked cards: a lock on the unseen badge, no art. Unlock progress panel. */
+.sheiko-pokedex-badge.sheiko-pokedex-lock { display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
+.sheiko-pokedex-badge.sheiko-pokedex-lock svg { width: 22px; height: 22px; }
+.sheiko-pokedex-cell.is-locked .sheiko-pokedex-name { color: var(--text-faint); }
+.sheiko-pokedex-unlock {
+	margin-bottom: var(--size-4-3);
+	padding: var(--size-4-2) var(--size-4-3);
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+.sheiko-pokedex-unlock-title { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.sheiko-pokedex-unlock-icon { display: inline-flex; color: var(--text-muted); }
+.sheiko-pokedex-unlock-icon svg { width: 16px; height: 16px; }
+.sheiko-pokedex-unlock-progress { margin-top: 2px; font-size: var(--font-ui-small); color: var(--text-muted); }
+.sheiko-pokedex-item { border-style: dashed; }

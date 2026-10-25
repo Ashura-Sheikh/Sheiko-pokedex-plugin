@@ -1,7 +1,7 @@
-"""Builds src/data/gen1.ts from PokeAPI's published CSV files.
+"""Builds src/data/pokedex.ts from PokeAPI's published CSV files.
 
 Usage:
-    python3 -I scripts/build_gen1_data.py <csv-dir>
+    python3 -I scripts/build_species_data.py <csv-dir>
 
 <csv-dir> must contain these files from
 https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv :
@@ -9,8 +9,8 @@ https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv :
     types.csv, pokemon_evolution.csv, items.csv,
     pokemon_moves.csv, move_names.csv, moves.csv
 
-Only names, types, capture rates, evolution links and Red/Blue level-up
-moves are kept. No images.
+Only names, types, capture rates, generations, evolution links and level-up
+moves are kept (Red/Blue for #1-151, X/Y for #152 and up). No images.
 Run it again and commit the output if the data ever needs refreshing.
 """
 
@@ -46,14 +46,17 @@ def legal_comment(text):
     return "\n".join(lines + [" */"]) + "\n"
 
 
-GEN1_MAX = 151
+MAX_DEX = 251  # Gen 2 (2.0.0). Raise with each new Gen.
 ENGLISH = 9
-RED_BLUE = 1  # version_group id
+RED_BLUE = 1  # version_group id, moves for #1-151 (Sheikh, 2026-10-12)
+X_Y = 15  # version_group id, moves for #152 and up (Sheikh's (b), 2026-10-25)
 LEVEL_UP = 1  # pokemon_move_method id
 # PokeAPI evolution_trigger ids
-TRIGGERS = {1: "level", 2: "trade", 3: "item"}
-# Gen 1 evolution items -> the plugin's stone kinds. Trade evolutions use a "trade" stone (Sheikh, 2026-10-12).
-STONES = {"fire-stone": "fire", "water-stone": "water", "thunder-stone": "thunder", "leaf-stone": "leaf", "moon-stone": "moon"}
+LEVEL_UP_TRIGGER, TRADE_TRIGGER, USE_ITEM_TRIGGER = 1, 2, 3
+# Evolution stones -> the plugin's stone kinds. Plain trades use a "trade" stone (Sheikh, 2026-10-12).
+STONES = {"fire-stone": "fire", "water-stone": "water", "thunder-stone": "thunder", "leaf-stone": "leaf", "moon-stone": "moon", "sun-stone": "sun"}
+# Items held for a trade evolution -> the plugin's Trade Items (2.0.0, Sheikh 2026-10-25).
+HELD_ITEMS = {"kings-rock": "kings-rock", "metal-coat": "metal-coat", "dragon-scale": "dragon-scale", "up-grade": "up-grade"}
 
 
 def rows(csv_dir, name):
@@ -72,12 +75,48 @@ def tier_for(species):
     return "common"
 
 
+def has(r, key):
+    """A condition column is set. PokeAPI leaves unset ones empty; a 0 can be a real value."""
+    return r.get(key) not in (None, "")
+
+
+def evolution_for(sid, r, items):
+    """The plugin's evolution entry for PokeAPI evolution row `r`."""
+    trig = int(r["evolution_trigger_id"])
+    lvl = int(r["minimum_level"]) if r["minimum_level"] else None
+    if trig == USE_ITEM_TRIGGER:
+        item = items.get(int(r["trigger_item_id"])) if r["trigger_item_id"] else None
+        if item not in STONES:
+            sys.exit("unexpected evolution item for species %d: %s" % (sid, item))
+        return {"trigger": "item", "minLevel": lvl, "stone": STONES[item]}
+    if trig == TRADE_TRIGGER:
+        if has(r, "held_item_id"):
+            held = items.get(int(r["held_item_id"]))
+            if held not in HELD_ITEMS:
+                sys.exit("unexpected held item for species %d: %s" % (sid, held))
+            return {"trigger": "trade", "minLevel": None, "item": HELD_ITEMS[held]}
+        return {"trigger": "trade", "minLevel": None, "stone": "trade"}
+    if trig == LEVEL_UP_TRIGGER:
+        if has(r, "minimum_happiness") or has(r, "minimum_affection") or has(r, "minimum_beauty"):
+            return {"trigger": "other", "minLevel": None, "item": "friendship"}
+        # Any other condition (relative stats, held item, time of day, gender, party ...) makes it
+        # a "general" Trade Item evolution. relative_physical_stats = 0 (Attack = Defense, Hitmontop)
+        # is a real condition, so has() is used, not truthiness.
+        others = ["relative_physical_stats", "held_item_id", "gender_id", "party_species_id", "party_type_id",
+                  "trade_species_id", "known_move_id", "known_move_type_id", "location_id"]
+        if any(has(r, k) for k in others) or r.get("time_of_day") or r.get("needs_overworld_rain") == "1" \
+                or r.get("turn_upside_down") == "1" or lvl is None:
+            return {"trigger": "other", "minLevel": None, "item": "general"}
+        return {"trigger": "level", "minLevel": lvl}
+    return {"trigger": "other", "minLevel": None, "item": "general"}
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__)
     csv_dir = sys.argv[1]
 
-    species = [r for r in rows(csv_dir, "pokemon_species") if int(r["id"]) <= GEN1_MAX]
+    species = [r for r in rows(csv_dir, "pokemon_species") if int(r["id"]) <= MAX_DEX]
     names = {
         int(r["pokemon_species_id"]): r["name"]
         for r in rows(csv_dir, "pokemon_species_names")
@@ -88,26 +127,15 @@ def main():
     types = {}
     for r in rows(csv_dir, "pokemon_types"):
         pid = int(r["pokemon_id"])
-        if pid <= GEN1_MAX:  # Gen 1 default forms share their species id
+        if pid <= MAX_DEX:  # default forms share their species id
             types.setdefault(pid, []).append((int(r["slot"]), type_names[int(r["type_id"])]))
     evolution = {}
     for r in rows(csv_dir, "pokemon_evolution"):
         sid = int(r["evolved_species_id"])
-        # The first row per species is the original Gen 1 method; later rows are regional forms.
-        if sid <= GEN1_MAX and sid not in evolution:
-            trig = TRIGGERS.get(int(r["evolution_trigger_id"]), "other")
-            lvl = int(r["minimum_level"]) if r["minimum_level"] else None
-            entry = {"trigger": trig, "minLevel": lvl}
-            if trig == "item":
-                item = items.get(int(r["trigger_item_id"])) if r["trigger_item_id"] else None
-                if item not in STONES:
-                    sys.exit("unexpected evolution item for species %d: %s" % (sid, item))
-                entry["stone"] = STONES[item]
-            elif trig == "trade":
-                entry["stone"] = "trade"
-            evolution[sid] = entry
+        # The first row per species is the original method; later rows are later games or regional forms.
+        if sid <= MAX_DEX and sid not in evolution:
+            evolution[sid] = evolution_for(sid, r, items)
 
-    # Red/Blue level-up moves (Sheikh, 2026-10-12), in the order the games teach them.
     move_names = {
         int(r["move_id"]): r["name"]
         for r in rows(csv_dir, "move_names")
@@ -117,7 +145,10 @@ def main():
     learn = {}
     for r in rows(csv_dir, "pokemon_moves"):
         pid = int(r["pokemon_id"])
-        if pid <= GEN1_MAX and int(r["version_group_id"]) == RED_BLUE and int(r["pokemon_move_method_id"]) == LEVEL_UP:
+        if pid > MAX_DEX or int(r["pokemon_move_method_id"]) != LEVEL_UP:
+            continue
+        want = RED_BLUE if pid <= 151 else X_Y
+        if int(r["version_group_id"]) == want:
             order = int(r["order"]) if r["order"] else 0
             learn.setdefault(pid, []).append((int(r["level"]), order, int(r["move_id"])))
     moves = {}
@@ -126,9 +157,8 @@ def main():
         out_moves = []
         for lvl, _, mid in sorted(lst):
             name = move_names[mid]
-            # Red/Blue lists 101 moves twice per species: once as a starting move (level 1) and
-            # again at a later level (e.g. Charmeleon: Ember at 1 and 9; Mewtwo: Psychic at 1 and 66).
-            # Keep the first, so a freshly caught or evolved Pokémon already knows it.
+            # A move listed twice (once at level 1, again later) is kept at its first level,
+            # so a freshly caught or evolved Pokemon already knows it.
             if name in seen:
                 continue
             seen.add(name)
@@ -139,10 +169,11 @@ def main():
     for s in sorted(species, key=lambda r: int(r["id"])):
         sid = int(s["id"])
         parent = int(s["evolves_from_species_id"]) if s["evolves_from_species_id"] else None
-        if parent is not None and parent > GEN1_MAX:
-            parent = None  # e.g. Pikachu's later-generation baby form
+        if parent is not None and parent > MAX_DEX:
+            parent = None  # a baby form from a later Gen (e.g. Munchlax before Snorlax)
         entry = {
             "dex": sid,
+            "gen": int(s["generation_id"]),
             "name": names[sid],
             "types": [t for _, t in sorted(types[sid])],
             "tier": tier_for(s),
@@ -150,20 +181,21 @@ def main():
             "evolvesFrom": parent,
         }
         if parent is not None:
-            entry["evolution"] = evolution.get(sid, {"trigger": "other", "minLevel": None})
+            entry["evolution"] = evolution.get(sid, {"trigger": "other", "minLevel": None, "item": "general"})
         entry["moves"] = moves.get(sid, [])
         out.append(entry)
 
-    if len(out) != GEN1_MAX:
-        sys.exit("expected %d species, got %d" % (GEN1_MAX, len(out)))
+    if len(out) != MAX_DEX:
+        sys.exit("expected %d species, got %d" % (MAX_DEX, len(out)))
 
-    target = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "data", "gen1.ts")
+    target = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "data", "pokedex.ts")
     with open(target, "w", encoding="utf-8") as f:
         f.write(legal_comment(POKEAPI_LICENSE) + "\n")
-        f.write("// GENERATED by scripts/build_gen1_data.py from PokeAPI CSV data. Do not edit by hand.\n")
-        f.write("// Names, types, capture rates, evolution links and Red/Blue level-up moves. No images.\n\n")
+        f.write("// GENERATED by scripts/build_species_data.py from PokeAPI CSV data. Do not edit by hand.\n")
+        f.write("// Names, types, capture rates, generations, evolution links and level-up moves\n")
+        f.write("// (Red/Blue for #1-151, X/Y for #152+). No images.\n\n")
         f.write("import type { Species } from '../species';\n\n")
-        f.write("export const GEN1: readonly Species[] = ")
+        f.write("export const SPECIES: readonly Species[] = ")
         f.write(json.dumps(out, ensure_ascii=False, indent="\t"))
         f.write(";\n")
     print("wrote %d species to %s" % (len(out), os.path.normpath(target)))

@@ -10,7 +10,8 @@ import { setSprites, spriteFor } from '../src/ui/art';
 import {
 	DOWNLOAD_PAUSE_MS,
 	MAX_SPRITE_BYTES,
-	SPRITE_COUNT,
+	SPRITE_BUCKETS,
+	bucketDexes,
 	SPRITES_GITIGNORE,
 	checkSprite,
 	downloadSprites,
@@ -105,8 +106,11 @@ test('checkSprite: accepts a 96×96 PNG under 64 KB, rejects anything else', () 
 	assert.equal(checkSprite(new TextEncoder().encode('<html>404</html>'.padEnd(40))), 'not a PNG');
 });
 
+/** Gen 1's bucket: these tests check the Gen 1 download, as before 2.0.0. */
+const GEN1_SPRITES = bucketDexes(SPRITE_BUCKETS[0]!);
+
 test('the source is PokeAPI\'s sprite repository, 151 files named 001.png to 151.png', () => {
-	assert.equal(SPRITE_COUNT, 151);
+	assert.equal(GEN1_SPRITES.length, 151);
 	assert.equal(spriteUrl(25), 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png');
 	assert.equal(spriteFileName(1), '001.png');
 	assert.equal(spriteFileName(151), '151.png');
@@ -132,7 +136,7 @@ test('download: all 151, one at a time, with a pause between each', async () => 
 			pauses.push(ms);
 		},
 		onProgress: (done) => progress.push(done),
-	});
+	}, GEN1_SPRITES);
 	assert.ok(r.ok);
 	assert.equal(r.sprites.size, 151);
 	assert.equal(urls.length, 151);
@@ -152,7 +156,7 @@ test('download: unreachable source → error, nothing returned to save', async (
 			return buf(fakePng());
 		},
 		sleep: async () => {},
-	});
+	}, GEN1_SPRITES);
 	assert.equal(r.ok, false);
 	assert.ok(!r.ok && /#40/.test(r.error) && /ERR_INTERNET_DISCONNECTED/.test(r.error));
 	assert.equal(calls, 40, 'stops at the first failure');
@@ -162,7 +166,7 @@ test('download: one bad image → error, nothing returned to save', async () => 
 	const r = await downloadSprites({
 		fetchBytes: async (url) => buf(url.endsWith('/7.png') ? fakePng(128, 128) : fakePng()),
 		sleep: async () => {},
-	});
+	}, GEN1_SPRITES);
 	assert.equal(r.ok, false);
 	assert.ok(!r.ok && /#7/.test(r.error) && /128×128/.test(r.error));
 });
@@ -176,7 +180,7 @@ test('download: stops when cancelled (plugin unloading)', async () => {
 		},
 		sleep: async () => {},
 		cancelled: () => calls >= 3,
-	});
+	}, GEN1_SPRITES);
 	assert.equal(r.ok, false);
 	assert.equal(calls, 3);
 });
@@ -200,7 +204,7 @@ test('settings explain the download before it happens (RAID row 87, condition 3)
 	for (const must of [
 		'Nothing is downloaded unless you press',
 		'github.com/PokeAPI/sprites',
-		'151 requests to raw.githubusercontent.com',
+		"one request per sprite you don't have yet to raw.githubusercontent.com",
 		'no other network requests',
 		'PNG, 96×96 and under 64 KB',
 		'nothing is saved and the badges stay',

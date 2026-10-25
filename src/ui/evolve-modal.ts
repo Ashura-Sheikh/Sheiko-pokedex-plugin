@@ -1,6 +1,6 @@
 import { App, Modal } from 'obsidian';
-import { Species, StoneKind } from '../species';
-import { STONE_LABELS } from '../progression';
+import { Species } from '../species';
+import { EvolveUse, useLabel } from '../progression';
 import { dexLabel, renderBadge, renderTypes } from './art';
 
 /**
@@ -14,7 +14,7 @@ export class EvolveModal extends Modal {
 		app: App,
 		private from: Species,
 		private to: Species,
-		private stone: StoneKind | null,
+		private use: EvolveUse | null,
 		private onDecide: (evolve: boolean) => void,
 	) {
 		super(app);
@@ -28,14 +28,14 @@ export class EvolveModal extends Modal {
 		row.createDiv({ cls: 'sheiko-pokedex-evolve-arrow', text: '→' });
 		renderBadge(row, this.to, true, 'large');
 		contentEl.createEl('h2', {
-			text: this.stone ? `Use a ${STONE_LABELS[this.stone]} on ${this.from.name}?` : `What? ${this.from.name} is evolving!`,
+			text: this.use ? `Use a ${useLabel(this.use)} on ${this.from.name}?` : `What? ${this.from.name} is evolving!`,
 		});
 		contentEl.createEl('p', { cls: 'sheiko-pokedex-tier', text: `${this.to.name} ${dexLabel(this.to.dex)}` });
 		renderTypes(contentEl, this.to);
 		contentEl.createEl('p', {
 			cls: 'sheiko-pokedex-why',
-			text: this.stone
-				? 'The stone is used up. Both forms stay in your Pokedex.'
+			text: this.use
+				? `The ${'stone' in this.use ? 'stone' : 'item'} is used up. Both forms stay in your Pokedex.`
 				: 'Cancel to stay as you are. You will be asked again at the next level. Both forms stay in your Pokedex.',
 		});
 		const buttons = contentEl.createDiv({ cls: 'modal-button-container' });

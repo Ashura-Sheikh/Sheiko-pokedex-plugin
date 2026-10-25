@@ -17,7 +17,9 @@ import {
 	typePool,
 	withinSla,
 } from '../src/rarity';
-import { GEN1 } from '../src/data/gen1';
+import { speciesUpTo } from '../src/gens';
+/** Gen 1's species: these tests check Gen 1 behaviour, as before 2.0.0. */
+const GEN1 = speciesUpTo(1);
 import { TIERS, Tier } from '../src/species';
 
 test('SLA targets match sla-tracking.base: high 1, medium 2, normal 3, other 7', () => {
@@ -90,22 +92,22 @@ test('context map parsing skips junk and lower-cases types', () => {
 });
 
 test('candidates narrow by type and fall back to the whole tier when nothing matches', () => {
-	const electric = candidates('common', new Set(['electric']));
+	const electric = candidates('common', new Set(['electric']), GEN1);
 	assert.ok(electric.length > 0);
 	assert.ok(electric.every((p) => p.tier === 'common' && p.types.includes('electric')));
-	const none = candidates('legendary', new Set(['bug']));
+	const none = candidates('legendary', new Set(['bug']), GEN1);
 	assert.deepEqual(
 		none.map((p) => p.dex),
 		GEN1.filter((p) => p.tier === 'legendary').map((p) => p.dex),
 	);
-	assert.equal(candidates('rare', new Set()).length, GEN1.filter((p) => p.tier === 'rare').length);
+	assert.equal(candidates('rare', new Set(), GEN1).length, GEN1.filter((p) => p.tier === 'rare').length);
 });
 
 test('draw is deterministic per seed, scores the batch average plus boost, and respects the tier', () => {
 	const input = { seed: 'x|catch|0|A.md', scoreSum: 17, closes: 5, closesToday: 10, contexts: ['technical-delivery'] };
 	const map = parseContextTypes('technical-delivery: electric');
-	const a = draw(input, map);
-	const b = draw(input, map);
+	const a = draw(input, map, GEN1);
+	const b = draw(input, map, GEN1);
 	assert.equal(a.species.dex, b.species.dex);
 	assert.equal(a.average, 3.4);
 	assert.equal(a.boost, 2);

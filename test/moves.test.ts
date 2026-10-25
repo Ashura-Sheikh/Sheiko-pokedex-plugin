@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GEN1 } from '../src/data/gen1';
+import { speciesUpTo } from '../src/gens';
+/** Gen 1's species: these tests check Gen 1 behaviour, as before 2.0.0. */
+const GEN1 = speciesUpTo(1);
 import { MOVE_SLOTS, currentMoves, learnedText, movesLearned, nextMove, speciesByDex } from '../src/progression';
 
 const by = (n: number) => speciesByDex(n)!;
