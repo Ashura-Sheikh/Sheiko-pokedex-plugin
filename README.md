@@ -58,7 +58,9 @@ If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitign
    - a task that has already counted once, including after a reopen, a rename or an archive move
    - a task closed with `closeReason: superseded` or `parked`
 
-   **Closes after the day's catch limit** (default 3 catches a day) give your partner XP only (since 1.2.0). They add no catch progress and no daily boost, and they never count toward a catch later. The notice says the limit is reached and shows the XP.
+   **Closes after the day's catch limit** (default 5 catches a day since 1.4.0; it was 3) give your partner XP only (since 1.2.0). They add no catch progress and no daily boost, and they never count toward a catch later. The notice says the limit is reached and shows the XP.
+
+   **Updating from 1.3.0 or earlier with a limit of 3:** your limit stays 3 until you choose. A notice says the default is now 5, and **Settings → Sheiko Pokedex** shows **Move to 5** and **Keep 3** until you pick one or type a new limit. Any other limit you set is kept and you aren't asked.
 4. **Each counted close moves you toward the next catch.**
    - The target is a hidden number from 4 to 7, drawn again after every catch.
    - You see "close N toward your next catch". The target itself is never shown.
@@ -131,7 +133,7 @@ The toolbar settings last while the view is open, including when it refreshes af
   - stone evolutions play the same scene but can't be stopped, as in the game
   - **Calm evolution scene** (a setting, and automatic when your system asks for reduced motion) replaces the flicker with a slow fade
   - no sound
-- **Stones:** 1 in 25 catches (about one every 8 days at 3 catches a day) also finds a stone matching the caught Pokémon's type:
+- **Stones:** 1 in 25 catches (about one every 5 days at 5 catches a day) also finds a stone matching the caught Pokémon's type:
 
   | Caught type | Stone |
   |---|---|

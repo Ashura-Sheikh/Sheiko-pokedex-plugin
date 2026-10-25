@@ -12,7 +12,7 @@ export const BASE_CLOSE_XP = 10;
 export const SIZE_MINUTES_PER_XP = 30;
 export const MAX_SIZE_XP = 40;
 export const DUPLICATE_BONUS_XP = 50;
-/** 1 in 25 of all catches (Sheikh, 2026-10-12): about one stone every 8 days at 3 catches a day. */
+/** 1 in 25 of all catches (Sheikh, 2026-10-12): about one stone every 5 days at 5 catches a day (1.4.0 default). */
 export const STONE_CHANCE = 1 / 25;
 
 export interface Mon {

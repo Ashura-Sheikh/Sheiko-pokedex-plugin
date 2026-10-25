@@ -66,8 +66,12 @@ export const DEFAULT_CONTEXT_TYPES = [
 	'TOS: water, grass, bug',
 ].join('\n');
 
+/** The default before 1.4.0. Saved data from then with exactly this limit is asked to move (#39). */
+export const OLD_DEFAULT_DAILY_CAP = 3;
+
 export const DEFAULT_SETTINGS: Settings = {
-	dailyCap: 3,
+	/** 5 since 1.4.0 (Sheikh, 2026-10-25, #39); was 3. */
+	dailyCap: 5,
 	showRewardWindow: true,
 	testTools: false,
 	contextTypes: DEFAULT_CONTEXT_TYPES,
@@ -148,6 +152,21 @@ export interface PokedexData {
 	recentCloses: string[];
 	/** What's left of the one-time Starter pack. */
 	starter: StarterPack;
+	/** The 1.4.0 "Move to 5 or Keep 3" question (#39). */
+	capUpgrade: CapUpgrade;
+}
+
+/**
+ * 1.4.0 (#39): saved data from before 1.4.0 with a limit of exactly 3 is asked once.
+ * 'new': not yet told (a notice shows on the next start); 'asked': told, the Settings box waits
+ * for an answer; 'done': answered, or never needed.
+ */
+export type CapUpgrade = 'new' | 'asked' | 'done';
+const CAP_UPGRADE_STATES: readonly CapUpgrade[] = ['new', 'asked', 'done'];
+
+/** Answers the 1.4.0 question: sets the limit and stops asking. Returns new data. */
+export function chooseDailyCap(data: PokedexData, cap: number): PokedexData {
+	return { ...data, settings: { ...data.settings, dailyCap: Math.max(0, Math.floor(cap)) }, capUpgrade: 'done' };
 }
 
 export function newProgress(installedAt: string, catches: number): Progress {
@@ -170,6 +189,7 @@ export function freshData(now: Date): PokedexData {
 		stones: noStones(),
 		recentCloses: [],
 		starter: fullStarterPack(),
+		capUpgrade: 'done',
 	};
 }
 
@@ -217,7 +237,23 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 
 	if (raw.version === 1 || raw.version === undefined) {
 		// 0.1.0 → 0.2.0: the limit is now catches per day, default 3 (Sheikh, 2026-10-12).
+		// Since 1.4.0 that default is 5, and these users aren't asked below (their saved value is 10).
 		if (savedSettings.dailyCap === 10) settings.dailyCap = DEFAULT_SETTINGS.dailyCap;
+	}
+
+	// 1.4.0 (#39): data saved before 1.4.0 has no capUpgrade. A saved limit of exactly 3 (or none,
+	// which meant 3 then) stays 3 and is asked once; any other saved limit is kept and not asked.
+	let capUpgrade: CapUpgrade;
+	if (raw.capUpgrade === undefined) {
+		const saved = savedSettings.dailyCap;
+		if (saved === undefined || saved === OLD_DEFAULT_DAILY_CAP) {
+			settings.dailyCap = OLD_DEFAULT_DAILY_CAP;
+			capUpgrade = 'new';
+		} else {
+			capUpgrade = 'done';
+		}
+	} else {
+		capUpgrade = CAP_UPGRADE_STATES.includes(raw.capUpgrade as CapUpgrade) ? (raw.capUpgrade as CapUpgrade) : 'done';
 	}
 
 	const p = isRecord(raw.progress) ? raw.progress : null;
@@ -258,7 +294,7 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 
 	const starter = normalizeStarter(raw.starter);
 
-	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones, recentCloses, starter };
+	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones, recentCloses, starter, capUpgrade };
 }
 
 /** Close counts can be halves since bulk closes get half credit: 3, 3.5. */

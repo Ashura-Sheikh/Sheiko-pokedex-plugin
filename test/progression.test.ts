@@ -132,9 +132,10 @@ test('a catch gives XP; a duplicate catch adds +50; a new catch starts at level 
 
 // ---------- Over the daily limit (1.2.0, Sheikh, 2026-10-15, issue #26) ----------
 
-/** Partner Charmander, and a daily limit already reached (3 catches today). */
+/** Partner Charmander, and a daily limit of 3 already reached (3 catches today). Set, not the default. */
 function overTheLimit(): PokedexData {
 	const data = setPartner(withCaught([4]), 4);
+	data.settings.dailyCap = 3;
 	data.daily = { date: data.daily.date, closes: 9, catches: 3 };
 	return data;
 }
@@ -167,6 +168,7 @@ test('over the daily limit: no catch, no progress, no daily boost, nothing carri
 
 test('over the daily limit without a partner: no XP, and the decision says so', () => {
 	const data = withCaught([4]);
+	data.settings.dailyCap = 3;
 	data.daily = { date: data.daily.date, closes: 9, catches: 3 };
 	const r = decide(close('A.md'), data, MAP, NOW);
 	assert.deepEqual(r.decision, { kind: 'capped', cap: 3, xp: null });

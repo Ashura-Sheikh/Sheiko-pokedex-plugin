@@ -14,6 +14,9 @@ import {
 	STARTER_XP_USES,
 	StarterRefusal,
 	StarterResult,
+	DEFAULT_SETTINGS,
+	OLD_DEFAULT_DAILY_CAP,
+	chooseDailyCap,
 	claimStarterPokemon,
 	claimStarterStones,
 	renamePath,
@@ -127,6 +130,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		});
 
 		this.app.workspace.onLayoutReady(async () => {
+			this.announceCapUpgrade();
 			const ok = await this.watcher.start();
 			if (!ok) {
 				new Notice('Sheiko Pokedex: TaskNotes is not installed and enabled, so no tasks are watched.');
@@ -157,6 +161,27 @@ export default class SheikoPokedexPlugin extends Plugin {
 		await this.saveData(this.data);
 		this.refreshViews();
 		this.updateStatusBar();
+	}
+
+	/** 1.4.0 (#39): tells users still on the old limit of 3, once, that the default is now 5. */
+	private announceCapUpgrade(): void {
+		if (this.data.capUpgrade !== 'new') return;
+		new Notice(
+			`Sheiko Pokedex: the default daily catch limit is now ${DEFAULT_SETTINGS.dailyCap}; yours is ${this.data.settings.dailyCap}. ` +
+				`Choose Move to ${DEFAULT_SETTINGS.dailyCap} or Keep ${OLD_DEFAULT_DAILY_CAP} in Settings → Sheiko Pokedex.`,
+			15000,
+		);
+		void this.enqueue(async () => {
+			if (this.data.capUpgrade === 'new') await this.commit({ ...this.data, capUpgrade: 'asked' });
+		});
+	}
+
+	/** Answers the 1.4.0 question from the Settings box (#39). */
+	async answerCapUpgrade(cap: number): Promise<void> {
+		await this.enqueue(async () => {
+			await this.commit(chooseDailyCap(this.data, cap));
+		});
+		this.settingTab?.refreshIfOpen();
 	}
 
 	private warnNoSheiko(): void {
@@ -655,6 +680,9 @@ class PokedexSettingTab extends PluginSettingTab {
 		switch (key as ControlKey) {
 			case 'dailyCap':
 				s.dailyCap = Math.floor(Number(value));
+				// Typing a limit answers the 1.4.0 question too (#39). Not redrawn now, so typing keeps
+				// focus; the box is gone the next time this tab opens.
+				this.plugin.data.capUpgrade = 'done';
 				break;
 			case 'bulkThreshold':
 				s.bulkThreshold = Math.floor(Number(value));
@@ -687,6 +715,7 @@ class PokedexSettingTab extends PluginSettingTab {
 				name: sheiko ? 'Sheiko Task Lifecycle is enabled' : 'Sheiko Task Lifecycle is not enabled',
 				desc: sheiko ? 'Task closes earn Pokémon.' : 'Closes will not earn Pokémon until it is.',
 			},
+			...this.capUpgradeItems(),
 			{
 				name: 'Daily catch limit',
 				desc: 'Catches per day. Once reached, further closes that day give your partner XP but no catch progress, and never count toward a catch later.',
@@ -757,6 +786,32 @@ class PokedexSettingTab extends PluginSettingTab {
 	/** Redraws the tab if it's on screen (after a Starter pack gift is used, which finishes after a dialog). */
 	refreshIfOpen(): void {
 		if (this.containerEl.isConnected) this.update();
+	}
+
+	/** 1.4.0 (#39): "Move to 5 or Keep 3", shown above the limit until answered. */
+	private capUpgradeItems(): SettingDefinitionItem<ControlKey>[] {
+		if (this.plugin.data.capUpgrade === 'done') return [];
+		const next = DEFAULT_SETTINGS.dailyCap;
+		return [
+			{
+				name: `New default: ${next} catches a day`,
+				render: (setting) => {
+					setting
+						.setDesc(
+							`Since 1.4.0 the default daily catch limit is ${next}. Yours is still ${OLD_DEFAULT_DAILY_CAP}. Choose one; you can change it again below at any time.`,
+						)
+						.addButton((b) =>
+							b
+								.setButtonText(`Move to ${next}`)
+								.setCta()
+								.onClick(() => void this.plugin.answerCapUpgrade(next)),
+						)
+						.addButton((b) =>
+							b.setButtonText(`Keep ${OLD_DEFAULT_DAILY_CAP}`).onClick(() => void this.plugin.answerCapUpgrade(OLD_DEFAULT_DAILY_CAP)),
+						);
+				},
+			},
+		];
 	}
 
 	/** Starter pack (Sheikh, 2026-10-13, 0.9.0): always shown; each gift once per install, asked first. */

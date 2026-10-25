@@ -1,7 +1,7 @@
 {
 	"id": "sheiko-pokedex",
 	"name": "Sheiko Pokedex",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"minAppVersion": "1.13.0",
 	"description": "Catch a Gen 1 Pokémon each time a task closes. Needs TaskNotes and Sheiko Task Lifecycle.",
 	"author": "Sheikh M Sahil",

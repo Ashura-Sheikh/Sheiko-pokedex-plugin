@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
 	CloseInput,
 	PokedexData,
+	chooseDailyCap,
 	closeMoment,
 	decide,
 	freshData,
@@ -103,14 +104,14 @@ test('progress is kept overnight; the daily counts reset', () => {
 	assert.equal(r.data.daily.catches, 0);
 });
 
-test('default limit is 3 catches a day; after that closes add no progress and never count later', () => {
+test('default limit is 5 catches a day (1.4.0, #39); after that closes add no progress and never count later', () => {
 	let data = freshData(NOW);
-	assert.equal(data.settings.dailyCap, 3);
-	for (const p of ['a', 'b', 'c']) data = closeUntilCatch(data, p).data;
-	assert.equal(data.daily.catches, 3);
+	assert.equal(data.settings.dailyCap, 5);
+	for (const p of ['a', 'b', 'c', 'd', 'e']) data = closeUntilCatch(data, p).data;
+	assert.equal(data.daily.catches, 5);
 	const before = data.progress;
 	const capped = decide(close('x.md'), data, MAP, NOW);
-	assert.deepEqual(capped.decision, { kind: 'capped', cap: 3, xp: null }, 'no partner here, so no XP (see progression tests)');
+	assert.deepEqual(capped.decision, { kind: 'capped', cap: 5, xp: null }, 'no partner here, so no XP (see progression tests)');
 	assert.deepEqual(capped.data.progress, before, 'no progress from a capped close');
 	assert.equal(capped.data.daily.closes, data.daily.closes, 'no daily boost from a capped close');
 	const tomorrow = new Date('2026-10-13T09:00:00+01:00');
@@ -183,13 +184,14 @@ test('renames move the ledger entry, so a renamed task still cannot count twice'
 test('normalizeData: fresh install defaults', () => {
 	const fresh = normalizeData(undefined, NOW);
 	assert.equal(fresh.version, 3);
-	assert.equal(fresh.settings.dailyCap, 3);
+	assert.equal(fresh.settings.dailyCap, 5);
+	assert.equal(fresh.capUpgrade, 'done', 'a new install is never asked');
 	assert.equal(fresh.daily.date, localDate(NOW));
 	assert.equal(fresh.catches, 0);
 	assert.equal(fresh.progress.closes, 0);
 });
 
-test('normalizeData migrates 0.1.0 data: keeps catches, limit 10 → 3, today\'s count carried', () => {
+test('normalizeData migrates 0.1.0 data: keeps catches, limit 10 → today\'s default (5), today\'s count carried', () => {
 	const v1 = {
 		version: 1,
 		installedAt: '2026-10-12T11:59:14.956Z',
@@ -200,7 +202,8 @@ test('normalizeData migrates 0.1.0 data: keeps catches, limit 10 → 3, today\'s
 	};
 	const m = normalizeData(v1, NOW);
 	assert.equal(m.version, 3);
-	assert.equal(m.settings.dailyCap, 3);
+	assert.equal(m.settings.dailyCap, 5);
+	assert.equal(m.capUpgrade, 'done', 'never had 3 saved, so not asked');
 	assert.equal(m.settings.contextTypes, 'legal: psychic', 'other settings kept');
 	assert.equal(m.caught['145']?.count, 1);
 	assert.equal(m.ledger['TaskNotes/Tasks/Test 0 task.md']?.dex, 145);
@@ -227,4 +230,55 @@ test('normalizeData keeps a deliberately chosen limit and saved 0.2.0 progress',
 	assert.deepEqual(v2.progress, { closes: 2, target: 6, scoreSum: 7, contexts: ['legal'] });
 	assert.deepEqual(v2.daily, { date: localDate(NOW), closes: 9, catches: 2 });
 	assert.equal(v2.catches, 4);
+});
+
+// ---------- 1.4.0: default limit 5, users on 3 asked once (#39, Sheikh 2026-10-25) ----------
+
+test('1.4.0: saved 1.3.0 data with a limit of 3 keeps 3 and is asked', () => {
+	const m = normalizeData({ version: 3, settings: { dailyCap: 3 }, catches: 6 }, NOW);
+	assert.equal(m.settings.dailyCap, 3, 'not moved without asking');
+	assert.equal(m.capUpgrade, 'new');
+});
+
+test('1.4.0: saved 1.3.0 data with no limit saved meant 3 then, so it keeps 3 and is asked', () => {
+	const m = normalizeData({ version: 3, settings: { showRewardWindow: true } }, NOW);
+	assert.equal(m.settings.dailyCap, 3);
+	assert.equal(m.capUpgrade, 'new');
+});
+
+test('1.4.0: saved 1.3.0 data with any other limit is kept and not asked', () => {
+	for (const cap of [0, 1, 4, 5, 10]) {
+		const m = normalizeData({ version: 3, settings: { dailyCap: cap } }, NOW);
+		assert.equal(m.settings.dailyCap, cap);
+		assert.equal(m.capUpgrade, 'done', `limit ${cap}`);
+	}
+});
+
+test('1.4.0: once saved, a chosen 3 is never asked again', () => {
+	const asked = normalizeData({ version: 3, settings: { dailyCap: 3 } }, NOW);
+	const kept = chooseDailyCap({ ...asked, capUpgrade: 'asked' }, 3);
+	const reloaded = normalizeData(JSON.parse(JSON.stringify(kept)), NOW);
+	assert.equal(reloaded.settings.dailyCap, 3);
+	assert.equal(reloaded.capUpgrade, 'done');
+	// A new install that later sets 3 by hand isn't asked either: its saved data has capUpgrade.
+	const fresh = freshData(NOW);
+	fresh.settings.dailyCap = 3;
+	assert.equal(normalizeData(JSON.parse(JSON.stringify(fresh)), NOW).capUpgrade, 'done');
+});
+
+test('1.4.0: "asked" survives a reload until answered; Move to 5 sets 5', () => {
+	const asked = { ...normalizeData({ version: 3, settings: { dailyCap: 3 } }, NOW), capUpgrade: 'asked' as const };
+	const reloaded = normalizeData(JSON.parse(JSON.stringify(asked)), NOW);
+	assert.equal(reloaded.capUpgrade, 'asked', 'the Settings box stays');
+	assert.equal(reloaded.settings.dailyCap, 3);
+	const moved = chooseDailyCap(reloaded, 5);
+	assert.equal(moved.settings.dailyCap, 5);
+	assert.equal(moved.capUpgrade, 'done');
+	assert.equal(reloaded.settings.dailyCap, 3, 'chooseDailyCap does not mutate its input');
+});
+
+test('1.4.0: an unknown saved capUpgrade value is treated as answered', () => {
+	const m = normalizeData({ version: 3, settings: { dailyCap: 3 }, capUpgrade: 'banana' }, NOW);
+	assert.equal(m.capUpgrade, 'done');
+	assert.equal(m.settings.dailyCap, 3);
 });
