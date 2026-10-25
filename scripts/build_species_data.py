@@ -23,7 +23,7 @@ import sys
 # PokeAPI's licence (BSD-3-Clause), copied verbatim from
 # https://github.com/PokeAPI/pokeapi/blob/master/LICENSE.md . Its second condition asks
 # binary redistributions to reproduce the notice, and this data ships inside main.js,
-# so it is written into gen1.ts as a /*! legal comment */, which esbuild keeps in the build.
+# so it is written into pokedex.ts as a /*! legal comment */, which esbuild keeps in the build.
 POKEAPI_LICENSE = """Copyright (c) © 2013–2023 Paul Hallett and PokéAPI contributors (https://github.com/PokeAPI/pokeapi#contributing). Pokémon and Pokémon character names are trademarks of Nintendo.
 
 All rights reserved.

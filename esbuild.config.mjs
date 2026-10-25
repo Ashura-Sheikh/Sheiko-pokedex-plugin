@@ -44,7 +44,7 @@ const context = await esbuild.context({
 	minify: prod,
 	// Development builds keep the unlimited test commands (src/dev-tools.ts); release builds drop them.
 	define: { __SHEIKO_DEV__: prod ? 'false' : 'true' },
-	// Keep /*! legal comments */ (PokeAPI's BSD-3 notice in src/data/gen1.ts) at the end of
+	// Keep /*! legal comments */ (PokeAPI's BSD-3 notice in src/data/pokedex.ts) at the end of
 	// main.js, so release users get the notice. Explicit, not left to esbuild's default.
 	legalComments: 'eof',
 });
