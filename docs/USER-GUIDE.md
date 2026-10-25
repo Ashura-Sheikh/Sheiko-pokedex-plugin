@@ -1,6 +1,6 @@
 # Sheiko Pokedex: user guide
 
-A walk-through of what you'll see, from your first close to your first evolution. For the rules behind each step (odds, XP, limits), see the [README](../README.md).
+A walk-through of what you'll see, from your first close to your first evolution. For the rules behind each step (odds, XP, limits), see [How it works](HOW-IT-WORKS.md).
 
 > **About the screenshots:** they show the default **placeholder badges**, the coloured circle with a letter that every Pokémon is drawn as until you choose to download sprites. With sprites downloaded, the same screens show pixel art instead. This repository contains no Pokémon artwork, screenshots included.
 

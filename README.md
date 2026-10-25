@@ -51,7 +51,7 @@ Then copy the same 3 files into the plugin folder and enable it as above.
 
 ## Catching
 
-- **Close a task, make progress.** Each task you close while Obsidian is running moves you toward the next catch. The target is a hidden number from 4 to 7. Tasks that were already done when the plugin starts never count.
+- **Close a task, make progress.** Each counted close made while Obsidian is running moves you toward the next catch. The target is a hidden number from 4 to 7. Tasks that were already done when the plugin starts never count.
 - **Better closes, better odds.** High-priority tasks and tasks closed within their SLA target score higher, and so does closing more in a day. A higher score raises the odds of Uncommon, Rare and Legendary Pokémon. Task `contexts` narrow which types can appear; the mapping is editable in the settings.
 - **Not every close counts.** A task counts once, even after a reopen, rename or archive move. Tasks closed with `closeReason: superseded` or `parked` don't count. Very large bursts of closes count for less.
 - **Daily catch limit** (default 5, a setting). Closes after the limit give your partner XP only.
@@ -78,7 +78,7 @@ Toolbar settings last while the view is open, including when it refreshes after 
 
 **Gen 1** (#1–151) is open from the start. **Gen 2** (#152–251, 100 Pokémon, including Raikou, Entei, Suicune, Lugia, Ho-Oh and Celebi) **unlocks when you catch 3 Pokémon and level one Pokémon up by 2 levels, or evolve any Pokémon.**
 
-- **Before it unlocks,** Gen 2's cards show as **locked** (a number and a lock, nothing else), and a panel above the grid shows your progress. A locked Gen shows "Locked" in the Gen count.
+- **Before it unlocks,** Gen 2's cards show as **locked** (a number, a lock and "Locked", nothing else), and a panel above the grid shows your progress. A locked Gen shows "Locked" in the Gen count.
 - **When it unlocks,** a notice says so. Gen 2 Pokémon can be caught, and the new evolutions and items open.
 - **Updating from 1.x:** if you already meet the rule, Gen 2 unlocks straight away.
 - **Gen 1 gains with the unlock:**
@@ -94,7 +94,7 @@ Unlock details and the Gen 1 trade-off: [How it works → Unlocking Gens](docs/H
 
 ## Partner and evolution
 
-- **Choose a partner** from your caught Pokémon: **Choose partner** in the Pokedex view, **Make partner** on a Pokémon, or the **Choose partner** command.
+- **Choose a partner** from your caught Pokémon: **Choose partner** in the Pokedex view, **Make partner** on a Pokémon, or the **Choose partner** command. **You need a partner to earn XP:** closes before you choose one earn none.
 - **Partner card:** a large card at the top of the Pokedex view with a 2× sprite, level and XP bar, current moves, next move and what it evolves into (level, stone or fully evolved).
 - **Partner animation:** hovering over the card, or tabbing into it, plays a short animation. Choose in **Settings → Sheiko Pokedex → Partner animation**:
   - **Calm** (default): a soft glow in the partner's type colour.
@@ -164,7 +164,7 @@ To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokedex →
 - **To go back to badges,** press **Remove sprites** in the same place. That deletes the folder.
 - **Who owns them:** the artwork belongs to Nintendo / Game Freak. It is not covered by this plugin's licence or PokeAPI's. **Sprites are for your own use: don't commit, share or redistribute them.**
 
-**This repository and its releases never contain Pokémon artwork, and tests enforce it.** CI fails if an image file is committed anywhere except as a PNG in `docs/images/`, if any committed PNG is 96×96 (a sprite's size), or if embedded image data is committed. The release workflow fails if `main.js` contains image data. The screenshots in `docs/images/` show placeholder badges only.
+**This repository and its releases never contain Pokémon artwork, and tests enforce it.** CI fails if an image file is committed anywhere except as a PNG in `docs/images/`, if any committed PNG is 96×96 (a sprite's size), or if embedded image data is committed. The release workflow fails if `main.js` contains image data. The screenshots in `docs/images/` contain no sprites.
 
 ## Privacy
 
