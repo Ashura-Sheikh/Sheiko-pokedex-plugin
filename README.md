@@ -34,7 +34,7 @@ An Obsidian plugin that turns finishing tasks into catching Pokémon. Close task
 
 **From a release.** Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/Ashura-Sheikh/Sheiko-pokedex-plugin/releases/latest) into `<your vault>/.obsidian/plugins/sheiko-pokedex/`. Then refresh the list in **Settings → Community plugins** and enable **Sheiko Pokedex**.
 
-![Settings → Community plugins with Sheiko Pokedex v1.3.0 installed and enabled](docs/images/install-plugins.png)
+![Settings → Community plugins with Sheiko Pokedex v2.0.0 installed and enabled](docs/images/install-plugins.png)
 
 **From source.** You need [Node.js](https://nodejs.org/).
 
@@ -85,6 +85,10 @@ Toolbar settings last while the view is open, including when it refreshes after 
   - **8 baby forms:** Pikachu (Pichu), Clefairy (Cleffa), Jigglypuff (Igglybuff), Hitmonlee and Hitmonchan (Tyrogue), Jynx (Smoochum), Electabuzz (Elekid), Magmar (Magby).
   - **10 evolutions:** Golbat → Crobat, Eevee → Espeon and Umbreon, Chansey → Blissey, Gloom → Bellossom, Poliwhirl → Politoed, Slowpoke → Slowking, Onix → Steelix, Scyther → Scizor, Seadra → Kingdra, Porygon → Porygon2.
 - **Coming next:** more Gens, one at a time, each unlocked the same way. No dates.
+
+![The Pokedex view before Gen 2 unlocks: the Unlock Gen 2 panel (catch 3 Pokémon (0/3) and level one up by 2 (0/2), or evolve any Pokémon), Gen 2 shown as Locked in the counts, and the toolbar with the Gen filter](docs/images/gen2-unlock-panel.png)
+
+![The grid filtered to Gen 2 before it unlocks: 100 shown, every card a lock with its number and Locked](docs/images/gen2-locked.png)
 
 Unlock details and the Gen 1 trade-off: [How it works → Unlocking Gens](docs/HOW-IT-WORKS.md#unlocking-gens).
 
