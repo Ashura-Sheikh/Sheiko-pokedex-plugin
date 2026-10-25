@@ -27,6 +27,7 @@ import {
 	useStarterXp,
 } from './store';
 import { registerTestCommands } from './dev-tools';
+import { ANIM_MODE_LABELS, parseAnimMode } from './partner-anim';
 import { ConfirmModal } from './ui/confirm-modal';
 import {
 	START_LEVEL,
@@ -656,7 +657,15 @@ export default class SheikoPokedexPlugin extends Plugin {
 }
 
 /** Settings keys shown as declarative controls (1.1.0, Obsidian 1.13 settings API). */
-type ControlKey = 'dailyCap' | 'showRewardWindow' | 'bulkThreshold' | 'bulkWindowMinutes' | 'calmEvolution' | 'contextTypes' | 'testTools';
+type ControlKey =
+	| 'dailyCap'
+	| 'showRewardWindow'
+	| 'bulkThreshold'
+	| 'bulkWindowMinutes'
+	| 'calmEvolution'
+	| 'partnerAnimation'
+	| 'contextTypes'
+	| 'testTools';
 
 /**
  * Settings tab, declarative since 1.1.0 (Obsidian 1.13's getSettingDefinitions, so settings appear
@@ -695,6 +704,9 @@ class PokedexSettingTab extends PluginSettingTab {
 				break;
 			case 'calmEvolution':
 				s.calmEvolution = value === true;
+				break;
+			case 'partnerAnimation':
+				s.partnerAnimation = parseAnimMode(value);
 				break;
 			case 'testTools':
 				s.testTools = value === true;
@@ -757,6 +769,11 @@ class PokedexSettingTab extends PluginSettingTab {
 				name: 'Calm evolution scene',
 				desc: 'Replaces the fast flicker of the evolution scene with a slow fade. Turned on automatically when your system asks for reduced motion.',
 				control: { type: 'toggle', key: 'calmEvolution' },
+			},
+			{
+				name: 'Partner animation',
+				desc: "Hovering or tabbing to your partner's card in the Pokedex plays a short animation. Full adds movement and an effect for its type (flames for Fire, a splash for Water). Calm is a soft glow in its type colour. Calm is used instead of Full when your system asks for reduced motion.",
+				control: { type: 'dropdown', key: 'partnerAnimation', options: { ...ANIM_MODE_LABELS } },
 			},
 			this.spritesGroup(),
 			this.starterGroup(),

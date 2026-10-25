@@ -112,6 +112,12 @@ The toolbar settings last while the view is open, including when it refreshes af
 ## Partner, levels, evolution and stones
 
 - **Partner card:** the partner gets a large card at the top of the Pokedex view: a 2× sprite, level and XP bar, its current moves, its next move and what it evolves into (level, stone or fully evolved).
+- **Partner animation (since 1.5.0):** hovering over the partner card, or tabbing into it with the keyboard, plays a short animation of about a second. It doesn't loop and waits 2 seconds before it can play again. Choose in **Settings → Sheiko Pokedex → Partner animation**:
+  - **Calm** (the default): a soft glow in the partner's type colour, no movement.
+  - **Full:** the partner moves once (a bounce, shake, float…) with a small effect for its main type: flames for Fire, a splash for Water, sparks for Electric, leaves for Grass, frost for Ice, and so on for every type. The effects are drawn with CSS: no images, no downloads.
+  - **Off:** nothing.
+
+  When your system asks for reduced motion, Full plays as Calm. Only the partner card animates; the grid and the status bar don't. Thanks to @DiditaDeliaAndreea for the idea (#31).
 - **Partner:** choose one caught Pokémon as your partner, from the Pokedex view (**Choose partner**, or click a Pokémon and pick **Make partner**) or with the **Choose partner** command.
 - **Status bar:** shows the partner and its level, e.g. "Charmeleon Lv 17".
   - **Hover:** shows XP, e.g. "140 / 170 XP", and whether an evolution is available.

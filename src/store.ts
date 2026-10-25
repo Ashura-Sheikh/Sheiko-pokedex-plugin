@@ -36,6 +36,7 @@ import {
 	xpForClose,
 } from './progression';
 import { STONE_KINDS, StoneKind } from './species';
+import { AnimMode, parseAnimMode } from './partner-anim';
 
 export interface Settings {
 	/** Catches per day. Closes after the limit is reached earn nothing and never pay out later. */
@@ -53,6 +54,8 @@ export interface Settings {
 	bulkWindowMinutes: number;
 	/** Evolution scene without flicker (also automatic when the system asks for reduced motion). */
 	calmEvolution: boolean;
+	/** Partner animation on the hero card (1.5.0, #31): Full / Calm / Off. Reduced motion gives Calm. */
+	partnerAnimation: AnimMode;
 }
 
 export const DEFAULT_CONTEXT_TYPES = [
@@ -78,6 +81,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	bulkThreshold: 50,
 	bulkWindowMinutes: 6,
 	calmEvolution: false,
+	/** Calm on new installs and for existing users (Sheikh, 2026-10-25). */
+	partnerAnimation: 'calm',
 };
 
 /** Credit a bulk close gets toward the next catch and the daily boost (option C, Sheikh 2026-10-12). */
@@ -218,6 +223,8 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 	const installedAt = typeof raw.installedAt === 'string' ? raw.installedAt : base.installedAt;
 	const savedSettings = isRecord(raw.settings) ? (raw.settings as Partial<Settings>) : {};
 	const settings: Settings = { ...DEFAULT_SETTINGS, ...savedSettings };
+	// 1.5.0 (#31): missing (data from 1.4.0 or earlier) or unknown → Calm.
+	settings.partnerAnimation = parseAnimMode(savedSettings.partnerAnimation);
 	const caught = isRecord(raw.caught) ? ({ ...raw.caught } as Record<string, CaughtEntry>) : {};
 	const ledger = isRecord(raw.ledger) ? ({ ...raw.ledger } as Record<string, LedgerEntry>) : {};
 	const caughtTotal = Object.values(caught).reduce((n, c) => n + (typeof c?.count === 'number' ? c.count : 0), 0);

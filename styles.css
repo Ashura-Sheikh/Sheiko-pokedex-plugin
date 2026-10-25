@@ -241,3 +241,73 @@
 	line-height: 1.5;
 }
 .sheiko-pokedex-gb-hint { margin-top: 8px; font-size: var(--font-ui-smaller); color: var(--text-muted); }
+
+/* Partner animation (1.5.0, #31). One run of about 1 s, never looped, no flashing.
+   Calm: a soft glow in the partner's type colour. Full: the badge moves once and plain CSS
+   particles appear around it. No images. The badge moves, not the card, so buttons stay still. */
+.sheiko-pokedex-hero-art { position: relative; }
+.sheiko-pokedex-partner.is-hero.is-anim-calm { animation: sheiko-pokedex-calm-glow 1s ease-in-out 1; }
+@keyframes sheiko-pokedex-calm-glow {
+	0%, 100% { box-shadow: 0 0 0 0 transparent; }
+	45%, 60% { box-shadow: 0 0 0 3px var(--sheiko-pokedex-anim-colour), 0 0 18px 2px var(--sheiko-pokedex-anim-colour); }
+}
+.sheiko-pokedex-partner.is-hero.is-anim-full { box-shadow: 0 0 0 2px var(--sheiko-pokedex-anim-colour); }
+
+.sheiko-pokedex-hero-art[data-motion] .sheiko-pokedex-badge { animation-duration: 900ms; animation-timing-function: ease-out; animation-iteration-count: 1; }
+.sheiko-pokedex-hero-art[data-motion='bounce'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-bounce; }
+.sheiko-pokedex-hero-art[data-motion='shake'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-shake; }
+.sheiko-pokedex-hero-art[data-motion='float'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-float; }
+.sheiko-pokedex-hero-art[data-motion='rise'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-rise; }
+.sheiko-pokedex-hero-art[data-motion='tilt'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-tilt; }
+.sheiko-pokedex-hero-art[data-motion='slide'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-slide; }
+.sheiko-pokedex-hero-art[data-motion='pulse'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-pulse; }
+.sheiko-pokedex-hero-art[data-motion='fade'] .sheiko-pokedex-badge { animation-name: sheiko-pokedex-fade; }
+/* Psychic and Steel: a glow or a sheen on the badge itself instead of particles. */
+.sheiko-pokedex-hero-art[data-effect='glow'] .sheiko-pokedex-badge { filter: drop-shadow(0 0 10px var(--sheiko-pokedex-anim-colour)); }
+.sheiko-pokedex-hero-art[data-effect='shine'] .sheiko-pokedex-badge { filter: brightness(1.15) drop-shadow(0 0 6px #ffffff); }
+
+@keyframes sheiko-pokedex-bounce { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-18px); } 55% { transform: translateY(0); } 70% { transform: translateY(-6px); } }
+@keyframes sheiko-pokedex-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+@keyframes sheiko-pokedex-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes sheiko-pokedex-rise { 0%, 100% { transform: translateY(0) scale(1); } 45% { transform: translateY(-16px) scale(1.04); } }
+@keyframes sheiko-pokedex-tilt { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-7deg); } 65% { transform: rotate(5deg); } }
+@keyframes sheiko-pokedex-slide { 0%, 100% { transform: translateX(0); } 35% { transform: translateX(14px); } }
+@keyframes sheiko-pokedex-pulse { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.08); } }
+@keyframes sheiko-pokedex-fade { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.sheiko-pokedex-anim-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.sheiko-pokedex-particle {
+	position: absolute;
+	left: var(--x);
+	top: var(--y);
+	width: var(--size);
+	height: var(--size);
+	margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+	border-radius: 50%;
+	background: var(--sheiko-pokedex-anim-colour);
+	opacity: 0;
+	animation: sheiko-pokedex-particle var(--dur) ease-out var(--delay) 1 both;
+}
+@keyframes sheiko-pokedex-particle {
+	0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+	25% { opacity: 0.9; }
+	100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+}
+.sheiko-pokedex-particle.fx-flames { border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: radial-gradient(circle at 50% 70%, #ffd25a 0%, #e0653a 60%, transparent 75%); }
+.sheiko-pokedex-particle.fx-splash { background: #4a8fdc; box-shadow: inset 0 0 0 2px #bfe0ff; }
+.sheiko-pokedex-particle.fx-sparks { border-radius: 2px; background: #ffe066; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.sheiko-pokedex-particle.fx-leaves { border-radius: 0 100% 0 100%; background: #5fae4a; }
+.sheiko-pokedex-particle.fx-frost { border-radius: 2px; background: #dff4fa; box-shadow: 0 0 4px #7cc8d8; }
+.sheiko-pokedex-particle.fx-bubbles { background: transparent; box-shadow: inset 0 0 0 2px #b77ac6; }
+.sheiko-pokedex-particle.fx-dust { background: #c9a45a; filter: blur(1px); }
+.sheiko-pokedex-particle.fx-gust { width: calc(var(--size) * 3); height: 2px; border-radius: 2px; background: #e6ecff; }
+.sheiko-pokedex-particle.fx-impact { background: transparent; box-shadow: 0 0 0 2px #e05a4a; }
+.sheiko-pokedex-particle.fx-scales { border-radius: 2px; background: #8a7ae8; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.sheiko-pokedex-particle.fx-hearts { background: #f0a8dc; }
+.sheiko-pokedex-particle.fx-swirl { background: #3a302c; box-shadow: 0 0 6px #6a5a52; }
+
+/* Safety net: the code already plays Calm when reduced motion is on; this stops any movement anyway. */
+@media (prefers-reduced-motion: reduce) {
+	.sheiko-pokedex-hero-art[data-motion] .sheiko-pokedex-badge { animation: none; }
+	.sheiko-pokedex-anim-layer { display: none; }
+}
