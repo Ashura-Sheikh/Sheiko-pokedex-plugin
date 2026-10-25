@@ -1,6 +1,6 @@
 # Sheiko Pokedex: user guide
 
-A walk-through of what you'll see, from your first close to your first evolution. For the rules behind each step (odds, XP, limits), see the [README](../README.md).
+A walk-through of what you'll see, from your first close to your first evolution. For the rules behind each step (odds, XP, limits), see [How it works](HOW-IT-WORKS.md).
 
 > **About the screenshots:** they show the default **placeholder badges**, the coloured circle with a letter that every Pokémon is drawn as until you choose to download sprites. With sprites downloaded, the same screens show pixel art instead. This repository contains no Pokémon artwork, screenshots included.
 
@@ -21,7 +21,7 @@ You need Obsidian desktop with [TaskNotes](https://github.com/callumalpass/taskn
 
 If either required plugin is missing, a notice tells you, and closes won't earn Pokémon until it's enabled.
 
-![Settings → Community plugins with Sheiko Pokedex v1.3.0 installed and enabled](images/install-plugins.png)
+![Settings → Community plugins with Sheiko Pokedex v2.0.0 installed and enabled](images/install-plugins.png)
 
 ## 2. Close a task, catch a Pokémon
 
@@ -65,7 +65,15 @@ You won't have a partner at first. Choose one with **Choose partner** in the vie
 
 Hover over your partner's card, or tab into it, and it reacts for about a second. By default (**Calm**) the card glows softly in its type colour. Switch **Settings → Sheiko Pokedex → Partner animation** to **Full** for movement and a type effect (flames for a Fire-type, a splash for a Water-type…), or to **Off**. If your system asks for reduced motion, Full plays as Calm.
 
+![The Partner animation setting, set to Full: movement and a type effect](images/partner-animation-setting.png)
+
 ![The Pokedex view: the partner card, the stats and stones rows, and the start of the grid](images/pokedex-view.png)
+
+Before Gen 2 unlocks, the unlock panel shows your progress, and Gen 2's cards are locked:
+
+![The Pokedex view before Gen 2 unlocks: the Unlock Gen 2 panel (catch 3 Pokémon (0/3) and level one up by 2 (0/2), or evolve any Pokémon), Gen 2 shown as Locked in the counts, and the toolbar with the Gen filter](images/gen2-unlock-panel.png)
+
+![The grid filtered to Gen 2 before it unlocks: 100 shown, every card a lock with its number and Locked](images/gen2-locked.png)
 
 ## 4. A Pokémon's details
 
@@ -112,7 +120,7 @@ Press **Evolve** and the same Evolution scene plays. As in the game, a stone evo
 
 Out of the box, every Pokémon is a placeholder badge, and the plugin makes no network requests. To see the classic pixel sprites instead, go to **Settings → Sheiko Pokedex → Sprites** and press **Download Gen 1** (and **Download Gens 2–4** for Gen 2). Each button fetches only the sprites you don't have yet.
 
-![The Sprites section in the plugin's settings, after a download](images/settings-sprites.png)
+![The Sprites section in the plugin's settings before a download: Download Gen 1 (0 of 151) and Download Gens 2–4 (0 of 100), showing placeholder badges](images/settings-sprites.png)
 
 The settings explain each part before you press anything:
 
