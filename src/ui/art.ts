@@ -34,6 +34,7 @@ const TYPE_COLOURS: Record<string, string> = {
 	rock: '#aa9a5a',
 	ghost: '#6a5a9a',
 	dragon: '#6a5ae0',
+	dark: '#5a4a42', // 1.5.0: not in Gen 1; here so all 18 types have a colour
 	steel: '#9aa8b8',
 	fairy: '#e09ad0',
 };

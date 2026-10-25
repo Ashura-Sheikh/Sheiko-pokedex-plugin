@@ -4,8 +4,9 @@ import { PokedexData, formatCount, localDate } from '../store';
 import { STONE_KINDS, Species, TIERS, Tier } from '../species';
 import { BrowseControls, SCOPES, SORT_KEYS, Scope, SortKey, allTypes, browse, defaultControls } from '../browse';
 import { START_LEVEL, STONE_LABELS, currentMoves, evolutionHint, nextMove, speciesByDex, xpToNext } from '../progression';
-import { dexLabel, renderBadge, renderTypes, tierLabel, titleCase } from './art';
+import { dexLabel, renderBadge, renderTypes, tierLabel, titleCase, typeColour } from './art';
 import { renderXpBar } from './detail-modal';
+import { PartnerAnimator } from './partner-anim-ui';
 
 export const VIEW_TYPE_POKEDEX = 'sheiko-pokedex-view';
 
@@ -38,6 +39,15 @@ export class PokedexView extends ItemView {
 	async onOpen(): Promise<void> {
 		this.render();
 	}
+
+	/** 1.5.0 (#31): the partner animation's listeners, timers and particles go with the view. */
+	async onClose(): Promise<void> {
+		this.animator?.destroy();
+		this.animator = null;
+	}
+
+	/** The hero card's animator (1.5.0, #31); replaced on every redraw of the header. */
+	private animator: PartnerAnimator | null = null;
 
 	// 1.3.0 (#25): the toolbar's controls live here, on the open view only. They survive
 	// refreshes (a catch while the view is open) and are never saved to data.json.
@@ -201,6 +211,9 @@ export class PokedexView extends ItemView {
 	}
 
 	private renderHead(head: HTMLElement): void {
+		// The header is rebuilt on every catch or close; end the old card's animation first.
+		this.animator?.destroy();
+		this.animator = null;
 		head.empty();
 		const data = this.host.getData();
 		const caughtDex = new Set(Object.keys(data.caught).map(Number));
@@ -315,5 +328,14 @@ export class PokedexView extends ItemView {
 		details.addEventListener('click', () => this.host.openDetail(p.dex));
 		const change = buttons.createEl('button', { text: 'Change partner' });
 		change.addEventListener('click', () => this.host.choosePartner());
+
+		// 1.5.0 (#31): hover or keyboard focus on the card plays a short animation.
+		this.animator = new PartnerAnimator({
+			panel,
+			art,
+			types: p.types,
+			colour: typeColour(p.types[0] ?? 'normal'),
+			getMode: () => this.host.getData().settings.partnerAnimation,
+		});
 	}
 }

@@ -61,6 +61,8 @@ Open it from the ribbon icon (**Open Pokedex**), from the **Open Pokedex** comma
 
 You won't have a partner at first. Choose one with **Choose partner** in the view, the **Choose partner** command, or **Make partner** on any Pokémon you've caught. Only your partner earns XP.
 
+Hover over your partner's card, or tab into it, and it reacts for about a second. By default (**Calm**) the card glows softly in its type colour. Switch **Settings → Sheiko Pokedex → Partner animation** to **Full** for movement and a type effect (flames for a Fire-type, a splash for a Water-type…), or to **Off**. If your system asks for reduced motion, Full plays as Calm.
+
 ![The Pokedex view: the partner card, the stats and stones rows, and the start of the grid](images/pokedex-view.png)
 
 ## 4. A Pokémon's details
