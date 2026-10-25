@@ -1,6 +1,6 @@
 // PokeAPI's data is BSD-3-Clause, whose second condition asks binary redistributions to
 // reproduce its notice. The data ships inside main.js, so the notice must too (2026-10-13).
-// The generator holds the licence text; these tests check it reaches gen1.ts, main.js and the
+// The generator holds the licence text; these tests check it reaches pokedex.ts, main.js and the
 // README's Third-party notices (the README check added 2026-10-13: the 0.7.2 changelog said "a test
 // checks both", but until then none checked the README).
 
@@ -11,7 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 const root = new URL('..', import.meta.url).pathname; // test-dist/x.mjs → repo root
 
 function licenceLines(): string[] {
-	const py = readFileSync(root + 'scripts/build_gen1_data.py', 'utf8');
+	const py = readFileSync(root + 'scripts/build_species_data.py', 'utf8');
 	const body = py.match(/POKEAPI_LICENSE = """([\s\S]*?)"""/)?.[1];
 	assert.ok(body, 'POKEAPI_LICENSE not found in the generator');
 	return body.split('\n').map((l) => l.trim()).filter(Boolean);
@@ -30,11 +30,11 @@ test('the licence text is the full BSD-3 notice', () => {
 	}
 });
 
-test('gen1.ts starts with the notice as a /*! legal comment */', () => {
-	const src = readFileSync(root + 'src/data/gen1.ts', 'utf8');
-	assert.ok(src.startsWith('/*!'), 'gen1.ts must open with /*!');
+test('pokedex.ts starts with the notice as a /*! legal comment */', () => {
+	const src = readFileSync(root + 'src/data/pokedex.ts', 'utf8');
+	assert.ok(src.startsWith('/*!'), 'pokedex.ts must open with /*!');
 	const header = src.slice(0, src.indexOf('*/'));
-	for (const line of licenceLines()) assert.ok(header.includes(line), `gen1.ts header missing: ${line.slice(0, 60)}`);
+	for (const line of licenceLines()) assert.ok(header.includes(line), `pokedex.ts header missing: ${line.slice(0, 60)}`);
 });
 
 test('the built main.js carries the notice', (t) => {

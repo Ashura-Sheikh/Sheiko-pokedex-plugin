@@ -1,5 +1,5 @@
 import { App, FuzzySuggestModal } from 'obsidian';
-import { GEN1 } from '../data/gen1';
+import { ALL_SPECIES } from '../gens';
 import { PokedexData } from '../store';
 import { START_LEVEL, speciesByDex } from '../progression';
 import { Species } from '../species';
@@ -34,7 +34,7 @@ export class PartnerSuggestModal extends FuzzySuggestModal<Species> {
 	}
 }
 
-/** Pick a species: from `only` (the Starter pack's uncaught ones), or all 151 when null (test tools). */
+/** Pick a species: from `only` (the Starter pack's uncaught ones), or every released species when null (test tools). */
 export class SpeciesSuggestModal extends FuzzySuggestModal<Species> {
 	constructor(
 		app: App,
@@ -47,7 +47,7 @@ export class SpeciesSuggestModal extends FuzzySuggestModal<Species> {
 	}
 
 	getItems(): Species[] {
-		if (!this.only) return [...GEN1];
+		if (!this.only) return [...ALL_SPECIES];
 		return this.only.map((dex) => speciesByDex(dex)).filter((s): s is Species => !!s);
 	}
 

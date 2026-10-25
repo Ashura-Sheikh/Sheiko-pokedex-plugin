@@ -8,6 +8,9 @@
 // 1.2.0 (Sheikh, 2026-10-15, issue #26): the daily limit stops catches, not partner growth.
 // A close over the limit still gives the partner its normal XP, but no catch progress
 // and no daily boost, and it never counts toward a catch later.
+//
+// 2.0.0 (Sheikh, 2026-10-25, #42): Gen 2, unlocked as you play; catches draw only from unlocked
+// Gens; the Sun Stone; Trade Items dropped on partner level-ups and every 2–4 counted closes.
 
 import {
 	ContextTypes,
@@ -28,14 +31,29 @@ import {
 	START_LEVEL,
 	STONE_CHANCE,
 	Stones,
+	TradeItems,
 	addXp,
 	newMon,
 	noStones,
+	noTradeItems,
 	speciesByDex,
 	stoneForTypes,
 	xpForClose,
 } from './progression';
-import { STONE_KINDS, StoneKind } from './species';
+import {
+	CLOSE_ITEM_CHANCE,
+	ITEM_TARGET_MAX,
+	ITEM_TARGET_MIN,
+	LEVEL_UP_ITEM_CHANCE,
+	RELEASED_GEN,
+	UnlockBase,
+	baseNow,
+	inferEvolutions,
+	speciesUpTo,
+	tradeItemForPartner,
+	unlockProgress,
+} from './gens';
+import { STONE_KINDS, StoneKind, TRADE_ITEM_KINDS, TradeItemKind } from './species';
 import { AnimMode, parseAnimMode } from './partner-anim';
 
 export interface Settings {
@@ -159,6 +177,24 @@ export interface PokedexData {
 	starter: StarterPack;
 	/** The 1.4.0 "Move to 5 or Keep 3" question (#39). */
 	capUpgrade: CapUpgrade;
+	// ----- 2.0.0 (#42) -----
+	/** Gens 1..unlockedGen can be caught, evolved into and found. */
+	unlockedGen: number;
+	/** The highest Gen whose unlock notice has been shown; a notice shows when unlockedGen is higher. */
+	announcedGen: number;
+	/** Counts at the last unlock (the unlock rule counts from here). */
+	unlockBase: UnlockBase;
+	/** Evolutions done (counted since 2.0.0; earlier ones worked out from the ledger on update). */
+	evolutions: number;
+	tradeItems: TradeItems;
+	/** Counted closes toward the next 30% Trade Item roll, and the hidden 2–4 target. */
+	itemProgress: { closes: number; target: number };
+}
+
+/** The hidden 2–4 close target for the next Trade Item roll. */
+export function drawItemTarget(seed: string): number {
+	const r = seededRandom(hashString(`item-target|${seed}`))();
+	return ITEM_TARGET_MIN + Math.floor(r * (ITEM_TARGET_MAX - ITEM_TARGET_MIN + 1));
 }
 
 /**
@@ -195,6 +231,12 @@ export function freshData(now: Date): PokedexData {
 		recentCloses: [],
 		starter: fullStarterPack(),
 		capUpgrade: 'done',
+		unlockedGen: 1,
+		announcedGen: 1,
+		unlockBase: { catches: 0, levels: {}, evolutions: 0 },
+		evolutions: 0,
+		tradeItems: noTradeItems(),
+		itemProgress: { closes: 0, target: drawItemTarget(`${installedAt}|0`) },
 	};
 }
 
@@ -301,7 +343,85 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 
 	const starter = normalizeStarter(raw.starter);
 
-	return { version: 3, installedAt, settings, ledger, caught, catches, progress, daily, mons, partner, stones, recentCloses, starter, capUpgrade };
+	// 2.0.0 (#42). Data from 1.x has none of this: it starts on Gen 1 with the unlock rule counted
+	// from install (base 0), and evolutions worked out from the ledger. applyUnlock then unlocks
+	// Gen 2 straight away for users who already meet the rule (Sheikh's decision).
+	const pre2 = typeof raw.unlockedGen !== 'number';
+	const unlockedGen = pre2 ? 1 : Math.max(1, Math.min(RELEASED_GEN, Math.floor(raw.unlockedGen as number)));
+	const announcedGen =
+		typeof raw.announcedGen === 'number' ? Math.max(1, Math.min(unlockedGen, Math.floor(raw.announcedGen))) : 1;
+	const evolutions =
+		!pre2 && typeof raw.evolutions === 'number' && raw.evolutions >= 0 ? Math.floor(raw.evolutions) : inferEvolutions(caught, ledger);
+	const unlockBase = normalizeUnlockBase(pre2 ? undefined : raw.unlockBase);
+	const tradeItems = noTradeItems();
+	if (isRecord(raw.tradeItems)) {
+		for (const k of TRADE_ITEM_KINDS) {
+			const v = raw.tradeItems[k];
+			if (typeof v === 'number' && v > 0) tradeItems[k] = Math.floor(v);
+		}
+	}
+	const ip = isRecord(raw.itemProgress) ? raw.itemProgress : null;
+	const itemProgress =
+		ip && typeof ip.closes === 'number' && typeof ip.target === 'number'
+			? { closes: ip.closes, target: ip.target }
+			: { closes: 0, target: drawItemTarget(`${installedAt}|0`) };
+
+	return applyUnlock({
+		version: 3,
+		installedAt,
+		settings,
+		ledger,
+		caught,
+		catches,
+		progress,
+		daily,
+		mons,
+		partner,
+		stones,
+		recentCloses,
+		starter,
+		capUpgrade,
+		unlockedGen,
+		announcedGen,
+		unlockBase,
+		evolutions,
+		tradeItems,
+		itemProgress,
+	});
+}
+
+function normalizeUnlockBase(raw: unknown): UnlockBase {
+	if (!isRecord(raw)) return { catches: 0, levels: {}, evolutions: 0 };
+	const levels: Record<string, number> = {};
+	if (isRecord(raw.levels)) for (const [k, v] of Object.entries(raw.levels)) if (typeof v === 'number') levels[k] = v;
+	return {
+		catches: typeof raw.catches === 'number' ? raw.catches : 0,
+		levels,
+		evolutions: typeof raw.evolutions === 'number' ? raw.evolutions : 0,
+	};
+}
+
+/**
+ * Unlocks the next Gen when the rule is met (3 catches and a Pokémon up 2+ levels, or any
+ * evolution, since the last unlock), and takes a new base so the counts restart. One Gen at a
+ * time. Returns the same object when nothing changes.
+ */
+export function applyUnlock(data: PokedexData): PokedexData {
+	let next = data;
+	for (;;) {
+		const p = unlockProgress(next);
+		if (!p.met || p.next === null) return next;
+		next = { ...next, unlockedGen: p.next, unlockBase: baseNow(next) };
+	}
+}
+
+/** True when a Gen has unlocked since the last notice. The caller shows it, then calls markAnnounced. */
+export function unlockToAnnounce(data: PokedexData): number | null {
+	return data.unlockedGen > data.announcedGen ? data.unlockedGen : null;
+}
+
+export function markAnnounced(data: PokedexData): PokedexData {
+	return data.announcedGen === data.unlockedGen ? data : { ...data, announcedGen: data.unlockedGen };
 }
 
 /** Close counts can be halves since bulk closes get half credit: 3, 3.5. */
@@ -333,12 +453,57 @@ export interface XpGain {
 	toLevel: number;
 }
 
+/** `items`: Trade Items found by this close (2.0.0); only present when something dropped. */
 export type Decision =
 	| { kind: 'already' }
 	| { kind: 'excluded'; reason: string }
-	| { kind: 'capped'; cap: number; xp: XpGain | null }
-	| { kind: 'counted'; closes: number; xp: XpGain | null; bulk: boolean }
-	| { kind: 'caught'; draw: Draw; duplicate: boolean; count: number; xp: XpGain | null; stone: StoneKind | null; bulk: boolean };
+	| { kind: 'capped'; cap: number; xp: XpGain | null; items?: TradeItemKind[] }
+	| { kind: 'counted'; closes: number; xp: XpGain | null; bulk: boolean; items?: TradeItemKind[] }
+	| {
+			kind: 'caught';
+			draw: Draw;
+			duplicate: boolean;
+			count: number;
+			xp: XpGain | null;
+			stone: StoneKind | null;
+			bulk: boolean;
+			items?: TradeItemKind[];
+	  };
+
+/**
+ * Trade Item drops for one close (2.0.0, #44; Sheikh 2026-10-25). Mutates `next`.
+ * - 20% for each level the partner gained from this close.
+ * - `credit` > 0 (counted and catching closes only; Q2 (a): closes over the daily limit don't
+ *   count): adds to the hidden 2–4 counter; when it fills, 30%, then a new target.
+ * The item is the partner's type's (TYPE_TRADE_ITEM), and only if its Gen is unlocked.
+ * No partner, or no item unlocked yet: nothing drops, and the counter doesn't move.
+ */
+function rollTradeItems(next: PokedexData, xp: XpGain | null, credit: number, seed: string): TradeItemKind[] {
+	const partner = next.partner !== null ? speciesByDex(next.partner) : undefined;
+	const item = partner ? tradeItemForPartner(partner.types, next.unlockedGen) : null;
+	if (!item) return [];
+	const rand = seededRandom(hashString(`${seed}|item`));
+	const found: TradeItemKind[] = [];
+	if (xp) for (let l = xp.fromLevel; l < xp.toLevel; l++) if (rand() < LEVEL_UP_ITEM_CHANCE) found.push(item);
+	if (credit > 0) {
+		const ip = { ...next.itemProgress, closes: next.itemProgress.closes + credit };
+		if (ip.closes >= ip.target) {
+			if (rand() < CLOSE_ITEM_CHANCE) found.push(item);
+			ip.closes = 0;
+			ip.target = drawItemTarget(seed);
+		}
+		next.itemProgress = ip;
+	}
+	if (found.length) {
+		next.tradeItems = { ...next.tradeItems };
+		for (const k of found) next.tradeItems[k] += 1;
+	}
+	return found;
+}
+
+function withItems<T extends object>(d: T, items: TradeItemKind[]): T & { items?: TradeItemKind[] } {
+	return items.length ? { ...d, items } : d;
+}
 
 /**
  * Records this close's time and says whether it's a bulk close: more than `threshold`
@@ -410,8 +575,11 @@ export function decide(
 		mons: { ...data.mons },
 		stones: { ...data.stones },
 		recentCloses: [...data.recentCloses],
+		tradeItems: { ...data.tradeItems },
+		itemProgress: { ...data.itemProgress },
 	};
 	const bulk = noteClose(next, now);
+	const itemSeed = `${data.installedAt}|${input.path}`;
 
 	const reason = input.closeReason?.trim().toLowerCase() ?? '';
 	if (EXCLUDED_CLOSE_REASONS.includes(reason)) {
@@ -425,7 +593,8 @@ export function decide(
 		// today's closes (the daily boost) and the batch are untouched. Bulk doesn't change XP.
 		next.ledger[input.path] = { at, outcome: 'capped' };
 		const xp = givePartnerXp(next, xpForClose(sizeMinutes(input, now)));
-		return { data: next, decision: { kind: 'capped', cap, xp } };
+		const items = rollTradeItems(next, xp, 0, itemSeed);
+		return { data: next, decision: withItems({ kind: 'capped' as const, cap, xp }, items) };
 	}
 
 	// Count the close toward the batch. A bulk close counts as half a close toward the
@@ -441,7 +610,8 @@ export function decide(
 	if (next.progress.closes < next.progress.target) {
 		next.ledger[input.path] = { at, outcome: 'counted' };
 		const xp = givePartnerXp(next, closeXp);
-		return { data: next, decision: { kind: 'counted', closes: next.progress.closes, xp, bulk } };
+		const items = rollTradeItems(next, xp, credit, itemSeed);
+		return { data: next, decision: withItems({ kind: 'counted' as const, closes: next.progress.closes, xp, bulk }, items) };
 	}
 
 	// Target reached: catch.
@@ -454,6 +624,7 @@ export function decide(
 			contexts: next.progress.contexts,
 		},
 		map,
+		speciesUpTo(data.unlockedGen), // 2.0.0: only unlocked Gens can be caught
 	);
 	const key = String(d.species.dex);
 	const prev = next.caught[key];
@@ -474,13 +645,14 @@ export function decide(
 	const rand = seededRandom(hashString(`${data.installedAt}|stone|${data.catches}`));
 	let stone: StoneKind | null = null;
 	if (rand() < STONE_CHANCE) {
-		stone = stoneForTypes(d.species.types, rand);
+		stone = stoneForTypes(d.species.types, rand, data.unlockedGen);
 		next.stones[stone] += 1;
 	}
 
+	const items = rollTradeItems(next, xp, credit, itemSeed);
 	return {
 		data: next,
-		decision: { kind: 'caught', draw: d, duplicate: !!prev, count: entry.count, xp, stone, bulk },
+		decision: withItems({ kind: 'caught' as const, draw: d, duplicate: !!prev, count: entry.count, xp, stone, bulk }, items),
 	};
 }
 
@@ -503,10 +675,13 @@ export function testGivePartnerXp(data: PokedexData, amount: number): { data: Po
 	return xp ? { data: next, xp } : { data, xp: null };
 }
 
+/** One of each stone and Trade Item, including locked ones (development builds only). */
 export function testGiveEachStone(data: PokedexData): PokedexData {
 	const stones = { ...data.stones };
 	for (const k of STONE_KINDS) stones[k] += 1;
-	return { ...data, stones };
+	const tradeItems = { ...data.tradeItems };
+	for (const k of TRADE_ITEM_KINDS) tradeItems[k] += 1;
+	return { ...data, stones, tradeItems };
 }
 
 /** Adds a Pokémon to the Pokedex without a close (no ledger, progress or daily change). */
@@ -547,18 +722,21 @@ export function starterXpConfirmText(left: number): string {
 	return `${which} Each can only be used once. Use it now?`;
 }
 
-/** Dex numbers the Starter pack can add: every Gen 1 species not caught yet. */
+/** Dex numbers the Starter pack can add: every Gen 1 species not caught yet (unchanged in 2.0.0). */
 export function starterChoices(data: PokedexData): number[] {
 	const out: number[] = [];
-	for (let dex = 1; speciesByDex(dex); dex++) if (!data.caught[String(dex)]) out.push(dex);
+	for (const s of speciesUpTo(1)) if (!data.caught[String(s.dex)]) out.push(s.dex);
 	return out;
 }
+
+/** The Starter pack's stones: the original 6, never the later ones (Sheikh, 2026-10-25). */
+export const STARTER_STONES: readonly StoneKind[] = ['fire', 'water', 'thunder', 'leaf', 'moon', 'trade'];
 
 /** One of each stone, once. */
 export function claimStarterStones(data: PokedexData): StarterResult {
 	if (!data.starter.stones) return { ok: false, reason: 'used' };
 	const stones = { ...data.stones };
-	for (const k of STONE_KINDS) stones[k] += 1;
+	for (const k of STARTER_STONES) stones[k] += 1;
 	return { ok: true, data: { ...data, stones, starter: { ...data.starter, stones: false } } };
 }
 
@@ -568,7 +746,7 @@ export function claimStarterStones(data: PokedexData): StarterResult {
  */
 export function claimStarterPokemon(data: PokedexData, dex: number, now: Date): StarterResult {
 	if (!data.starter.pokemon) return { ok: false, reason: 'used' };
-	if (!speciesByDex(dex)) return { ok: false, reason: 'unknown' };
+	if (speciesByDex(dex)?.gen !== 1) return { ok: false, reason: 'unknown' };
 	const key = String(dex);
 	if (data.caught[key]) return { ok: false, reason: 'already-caught' };
 	const at = now.toISOString();
@@ -617,7 +795,8 @@ export function declineEvolution(data: PokedexData, dex: number): PokedexData {
 /**
  * Evolves `fromDex` into `toDex`. Both stay marked as caught (Sheikh, 2026-10-12).
  * The evolved form takes the higher of the two levels; the partner follows the evolution.
- * With `stone`, one stone of that kind is used; refused if none is held.
+ * With `stone` (or a Trade Item, 2.0.0), one of that kind is used; refused if none is held.
+ * 2.0.0: refused when `toDex` is in a locked Gen (Sheikh's Q1 (b)); each evolution is counted.
  */
 export function evolve(
 	data: PokedexData,
@@ -625,13 +804,16 @@ export function evolve(
 	toDex: number,
 	now: Date,
 	stone?: StoneKind,
+	item?: TradeItemKind,
 ): PokedexData | null {
 	const fromKey = String(fromDex);
 	const toKey = String(toDex);
 	const from = data.mons[fromKey];
 	const target = speciesByDex(toDex);
 	if (!from || !data.caught[fromKey] || target?.evolvesFrom !== fromDex) return null;
+	if (target.gen > data.unlockedGen) return null;
 	if (stone && data.stones[stone] <= 0) return null;
+	if (item && data.tradeItems[item] <= 0) return null;
 	const at = now.toISOString();
 	const prevTo = data.caught[toKey];
 	const existing = data.mons[toKey];
@@ -648,5 +830,7 @@ export function evolve(
 		mons: { ...data.mons, [fromKey]: fromMon, [toKey]: toMon },
 		partner: data.partner === fromDex ? toDex : data.partner,
 		stones: stone ? { ...data.stones, [stone]: data.stones[stone] - 1 } : data.stones,
+		tradeItems: item ? { ...data.tradeItems, [item]: data.tradeItems[item] - 1 } : data.tradeItems,
+		evolutions: data.evolutions + 1,
 	};
 }

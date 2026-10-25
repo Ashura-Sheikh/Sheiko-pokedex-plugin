@@ -4,12 +4,41 @@
 // folder, never in the repo or a release. The art belongs to Nintendo / Game Freak.
 //
 // This file holds the parts that don't need Obsidian: the URL, the checks on each image, and the
-// download itself (all 151 fetched and checked before anything is written, so a failure leaves
-// nothing half-written and the placeholder badges stay).
+// download itself (every requested sprite fetched and checked before anything is written, so a
+// failure leaves nothing half-written and the placeholder badges stay).
+//
+// 2.0.0 (#47; Sheikh's decisions 2026-10-25): downloads by bucket (Gen 1; Gens 2–4; Gens 5–6), each
+// covering the released Gens in it and fetching only what's missing. A save writes the sprites
+// already on disk plus the new ones, so one bucket's download never removes another's.
 
-import { GEN1 } from './data/gen1';
+import { ALL_SPECIES } from './gens';
 
-export const SPRITE_COUNT = GEN1.length; // 151
+export interface SpriteBucket {
+	id: 'gen1' | 'gen2-4' | 'gen5-6';
+	label: string;
+	gens: readonly number[];
+}
+
+export const SPRITE_BUCKETS: readonly SpriteBucket[] = [
+	{ id: 'gen1', label: 'Gen 1', gens: [1] },
+	{ id: 'gen2-4', label: 'Gens 2–4', gens: [2, 3, 4] },
+	{ id: 'gen5-6', label: 'Gens 5–6', gens: [5, 6] },
+];
+
+/** The released dex numbers in a bucket (Gens 3–4 join the Gens 2–4 bucket when they're released). */
+export function bucketDexes(b: SpriteBucket): number[] {
+	return ALL_SPECIES.filter((s) => b.gens.includes(s.gen)).map((s) => s.dex);
+}
+
+/** Buckets with at least one released Pokémon; a bucket's button appears once its first Gen is out. */
+export function releasedBuckets(): SpriteBucket[] {
+	return SPRITE_BUCKETS.filter((b) => bucketDexes(b).length > 0);
+}
+
+/** The dex numbers of `b` not yet saved. */
+export function missingDexes(b: SpriteBucket, have: ReadonlySet<number>): number[] {
+	return bucketDexes(b).filter((d) => !have.has(d));
+}
 export const MAX_SPRITE_BYTES = 64 * 1024;
 export const SPRITE_SIZE = 96;
 /** Pause between downloads, so the one-time fetch stays gentle on the host. */
@@ -52,10 +81,12 @@ export type DownloadResult =
 	| { ok: true; sprites: Map<number, Uint8Array> }
 	| { ok: false; error: string };
 
-/** Fetches and checks all 151 sprites, one at a time. Returns all of them or none. */
-export async function downloadSprites(deps: DownloadDeps): Promise<DownloadResult> {
+/** Fetches and checks the given sprites, one at a time. Returns all of them or none. */
+export async function downloadSprites(deps: DownloadDeps, dexes: readonly number[]): Promise<DownloadResult> {
 	const sprites = new Map<number, Uint8Array>();
-	for (let dex = 1; dex <= SPRITE_COUNT; dex++) {
+	const total = dexes.length;
+	for (let i = 0; i < total; i++) {
+		const dex = dexes[i]!;
 		if (deps.cancelled?.()) return { ok: false, error: 'Download stopped.' };
 		let bytes: Uint8Array;
 		try {
@@ -66,8 +97,8 @@ export async function downloadSprites(deps: DownloadDeps): Promise<DownloadResul
 		const problem = checkSprite(bytes);
 		if (problem) return { ok: false, error: `Sprite #${dex} failed the checks: ${problem}.` };
 		sprites.set(dex, bytes);
-		deps.onProgress?.(dex, SPRITE_COUNT);
-		if (dex < SPRITE_COUNT) await deps.sleep(DOWNLOAD_PAUSE_MS);
+		deps.onProgress?.(i + 1, total);
+		if (i < total - 1) await deps.sleep(DOWNLOAD_PAUSE_MS);
 	}
 	return { ok: true, sprites };
 }
@@ -145,33 +176,35 @@ export async function saveSpritesAtomically(fs: SpriteFs, dir: string, sprites: 
 
 /** First line of the Sprites section in settings. */
 export const SPRITES_INTRO =
-	'Optional pixel sprites for every Pokémon, in place of the coloured badges. Nothing is downloaded unless you press Download sprites below.';
+	'Optional pixel sprites for every Pokémon, in place of the coloured badges. Nothing is downloaded unless you press a Download button below.';
 
-/** The rows shown above the Download button, so users know exactly what happens before they press it. */
+/** The rows shown above the Download buttons, so users know exactly what happens before they press one. */
 export function spriteInfo(dir: string): { name: string; desc: string }[] {
+	const buckets = releasedBuckets().map((b) => `${b.label}: ${bucketDexes(b).length}`).join(', ');
+	const last = ALL_SPECIES.length;
 	return [
 		{
 			name: 'What you get',
-			desc: `${SPRITE_COUNT} pixel sprites, one for each Gen 1 Pokémon: ${SPRITE_SIZE}×${SPRITE_SIZE} PNG files, about 120 KB in total. Unseen Pokémon show as black silhouettes.`,
+			desc: `Pixel sprites for each Pokémon, downloaded in groups (${buckets}): ${SPRITE_SIZE}×${SPRITE_SIZE} PNG files of about 1 KB each. Unseen Pokémon show as black silhouettes; locked ones show a lock.`,
 		},
 		{
 			name: 'Where they come from',
 			desc:
 				"PokeAPI's sprite repository on GitHub (github.com/PokeAPI/sprites). " +
-				`The download makes ${SPRITE_COUNT} requests to raw.githubusercontent.com, one at a time with a short pause, ` +
-				'and takes about 30 seconds. The plugin makes no other network requests.',
+				'Each download makes one request per sprite you don\'t have yet to raw.githubusercontent.com, one at a time with a short pause ' +
+				'(Gen 1 takes about 30 seconds). The plugin makes no other network requests.',
 		},
 		{
 			name: 'Checks',
 			desc:
 				`Each image must be a PNG, ${SPRITE_SIZE}×${SPRITE_SIZE} and under ${MAX_SPRITE_BYTES / 1024} KB. ` +
-				`All ${SPRITE_COUNT} are downloaded and checked before anything is saved. ` +
+				'A group is downloaded and checked in full before anything is saved. ' +
 				'If the source cannot be reached or any image fails a check, nothing is saved and the badges stay. ' +
 				'Saved sprites are checked again each time Obsidian starts.',
 		},
 		{
 			name: 'Where they are saved',
-			desc: `${dir}, as 001.png to ${spriteFileName(SPRITE_COUNT)}. The folder has its own .gitignore, so a vault kept in git won't commit them.`,
+			desc: `${dir}, as 001.png to ${spriteFileName(last)}. The folder has its own .gitignore, so a vault kept in git won't commit them.`,
 		},
 		{
 			name: 'Who owns them',

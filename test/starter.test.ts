@@ -82,7 +82,9 @@ test('a damaged saved pack counts as used, never as a refill; XP uses are clampe
 
 test('stones: one of each, once; the second use is refused and changes nothing', () => {
 	const first = ok(claimStarterStones(freshData(NOW))).data;
-	assert.deepEqual(Object.values(first.stones), [1, 1, 1, 1, 1, 1]);
+	// The original 6 only: the Starter pack doesn't grow with new stones (Sheikh, 2026-10-25).
+	assert.deepEqual(first.stones, { fire: 1, water: 1, thunder: 1, leaf: 1, moon: 1, trade: 1, sun: 0 });
+	assert.deepEqual(Object.values(first.tradeItems), [0, 0, 0, 0, 0, 0], 'and never Trade Items');
 	assert.equal(first.starter.stones, false);
 	assert.deepEqual(claimStarterStones(first), { ok: false, reason: 'used' });
 });

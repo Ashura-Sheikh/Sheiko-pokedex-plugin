@@ -1,9 +1,17 @@
-import { ItemView, WorkspaceLeaf } from 'obsidian';
-import { GEN1 } from '../data/gen1';
+import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
+import {
+	GEN_RANGES,
+	UNLOCK_CATCHES,
+	UNLOCK_LEVELS,
+	speciesUpTo,
+	stonesUpTo,
+	tradeItemsUpTo,
+	unlockProgress,
+} from '../gens';
 import { PokedexData, formatCount, localDate } from '../store';
-import { STONE_KINDS, Species, TIERS, Tier } from '../species';
+import { Species, TIERS, Tier } from '../species';
 import { BrowseControls, SCOPES, SORT_KEYS, Scope, SortKey, allTypes, browse, defaultControls } from '../browse';
-import { START_LEVEL, STONE_LABELS, currentMoves, evolutionHint, nextMove, speciesByDex, xpToNext } from '../progression';
+import { START_LEVEL, STONE_LABELS, TRADE_ITEM_LABELS, currentMoves, evolutionHint, nextMove, speciesByDex, xpToNext } from '../progression';
 import { dexLabel, renderBadge, renderTypes, tierLabel, titleCase, typeColour } from './art';
 import { renderXpBar } from './detail-modal';
 import { PartnerAnimator } from './partner-anim-ui';
@@ -135,6 +143,16 @@ export class PokedexView extends ItemView {
 			this.renderResults();
 		});
 
+		// Gen filter (2.0.0, #46). Locked Gens can be picked; their cards show locked.
+		const gens = Object.keys(GEN_RANGES).map(Number);
+		const genSelect = this.select(bar, 'Generation', [['', 'All Gens'], ...gens.map((g): [string, string] => [String(g), `Gen ${g}`])]);
+		genSelect.value = this.controls.gen === null ? '' : String(this.controls.gen);
+		genSelect.addEventListener('change', () => {
+			const g = Number(genSelect.value);
+			this.controls = { ...this.controls, gen: gens.includes(g) ? g : null };
+			this.renderResults();
+		});
+
 		// Sort (#29). In All, caught Pokémon come first in this order, then unseen in dex order.
 		const sortLabels: Record<SortKey, string> = {
 			number: 'Sort: Pokedex number',
@@ -152,7 +170,7 @@ export class PokedexView extends ItemView {
 			this.renderResults();
 		});
 
-		// Clear (#30): back to All, empty search, Any type, Any rarity, Pokedex number.
+		// Clear (#30): back to All, empty search, Any type, Any rarity, All Gens, Pokedex number.
 		const clear = bar.createEl('button', { text: 'Clear' });
 		clear.setAttr('aria-label', 'Clear search, filters and sort');
 		clear.addEventListener('click', () => this.setControls(defaultControls()));
@@ -189,7 +207,7 @@ export class PokedexView extends ItemView {
 		const grid = el.createDiv({ cls: 'sheiko-pokedex-grid' });
 		for (const cell of result.cells) {
 			const p = speciesByDex(cell.dex);
-			if (p) this.renderCell(grid, p, cell.seen, data);
+			if (p) this.renderCell(grid, p, cell.seen, cell.locked, data);
 		}
 	}
 
@@ -217,6 +235,7 @@ export class PokedexView extends ItemView {
 		head.empty();
 		const data = this.host.getData();
 		const caughtDex = new Set(Object.keys(data.caught).map(Number));
+		const unlocked = speciesUpTo(data.unlockedGen);
 		const total = Object.values(data.caught).reduce((n, c) => n + c.count, 0);
 		const isToday = data.daily.date === localDate(new Date());
 		const catchesToday = isToday ? data.daily.catches : 0;
@@ -225,6 +244,7 @@ export class PokedexView extends ItemView {
 		head.createEl('h2', { text: 'Pokedex' });
 
 		this.renderPartner(head, data);
+		this.renderUnlock(head, data);
 
 		const stats = head.createDiv({ cls: 'sheiko-pokedex-stats' });
 		const stat = (label: string, value: string) => {
@@ -232,24 +252,66 @@ export class PokedexView extends ItemView {
 			s.createDiv({ cls: 'sheiko-pokedex-stat-value', text: value });
 			s.createDiv({ cls: 'sheiko-pokedex-stat-label', text: label });
 		};
-		stat('Species caught', `${caughtDex.size} / ${GEN1.length}`);
+		stat('Species caught', `${unlocked.filter((p) => caughtDex.has(p.dex)).length} / ${unlocked.length}`);
+		// Per Gen (2.0.0): a locked Gen shows "Locked", not a count of its unseen species.
+		for (const [g, r] of Object.entries(GEN_RANGES)) {
+			const gen = Number(g);
+			const n = r.last - r.first + 1;
+			const got = unlocked.filter((p) => p.gen === gen && caughtDex.has(p.dex)).length;
+			stat(`Gen ${gen}`, gen <= data.unlockedGen ? `${got} / ${n}` : 'Locked');
+		}
 		stat('Total catches', String(total));
 		stat('Catches today', `${catchesToday} / ${data.settings.dailyCap}`);
 		stat('Closes today', formatCount(closesToday));
 		stat('Toward next catch', formatCount(data.progress.closes));
 		for (const t of TIERS) {
-			const all = GEN1.filter((p) => p.tier === t);
+			const all = unlocked.filter((p) => p.tier === t);
 			stat(tierLabel(t), `${all.filter((p) => caughtDex.has(p.dex)).length} / ${all.length}`);
 		}
 
+		// Stones and Trade Items of the unlocked Gens only (2.0.0).
 		const stones = head.createDiv({ cls: 'sheiko-pokedex-stones' });
-		for (const k of STONE_KINDS) {
+		for (const k of stonesUpTo(data.unlockedGen)) {
 			const chip = stones.createSpan({ cls: `sheiko-pokedex-stone stone-${k}`, text: `${STONE_LABELS[k]} × ${data.stones[k]}` });
 			if (data.stones[k] === 0) chip.addClass('is-empty');
 		}
+		const items = tradeItemsUpTo(data.unlockedGen);
+		if (items.length) {
+			const row = head.createDiv({ cls: 'sheiko-pokedex-stones sheiko-pokedex-items' });
+			for (const k of items) {
+				const chip = row.createSpan({ cls: 'sheiko-pokedex-stone sheiko-pokedex-item', text: `${TRADE_ITEM_LABELS[k]} × ${data.tradeItems[k]}` });
+				if (data.tradeItems[k] === 0) chip.addClass('is-empty');
+			}
+		}
 	}
 
-	private renderCell(grid: HTMLElement, p: Species, seen: boolean, data: PokedexData): void {
+	/** Progress toward the next Gen (2.0.0, #46), until every released Gen is unlocked. */
+	private renderUnlock(parent: HTMLElement, data: PokedexData): void {
+		const p = unlockProgress(data);
+		if (p.next === null) return;
+		const box = parent.createDiv({ cls: 'sheiko-pokedex-unlock' });
+		const title = box.createDiv({ cls: 'sheiko-pokedex-unlock-title' });
+		setIcon(title.createSpan({ cls: 'sheiko-pokedex-unlock-icon' }), 'lock');
+		title.createSpan({ text: `Unlock Gen ${p.next}` });
+		const c = Math.min(p.catches, UNLOCK_CATCHES);
+		const l = Math.min(p.levels, UNLOCK_LEVELS);
+		box.createDiv({
+			cls: 'sheiko-pokedex-unlock-progress',
+			text: `Catch ${UNLOCK_CATCHES} Pokémon (${c}/${UNLOCK_CATCHES}) and level one up by ${UNLOCK_LEVELS} (${l}/${UNLOCK_LEVELS}), or evolve any Pokémon.`,
+		});
+	}
+
+	private renderCell(grid: HTMLElement, p: Species, seen: boolean, locked: boolean, data: PokedexData): void {
+		if (locked) {
+			// 2.0.0 (#46): a locked Gen's card is the number and a lock only. Like an unseen card it has
+			// no name, types, rarity, label or art (not even a silhouette), and it isn't clickable.
+			const cell = grid.createDiv({ cls: 'sheiko-pokedex-cell is-unseen is-locked' });
+			const badge = cell.createDiv({ cls: 'sheiko-pokedex-badge sheiko-pokedex-badge-small is-unseen sheiko-pokedex-lock' });
+			setIcon(badge, 'lock');
+			cell.createDiv({ cls: 'sheiko-pokedex-num', text: dexLabel(p.dex) });
+			cell.createDiv({ cls: 'sheiko-pokedex-name', text: 'Locked' });
+			return;
+		}
 		const cell = grid.createDiv({ cls: `sheiko-pokedex-cell${seen ? ' is-caught' : ' is-unseen'}` });
 		if (data.partner === p.dex) cell.addClass('is-partner');
 		renderBadge(cell, p, seen, 'small');
@@ -320,7 +382,7 @@ export class PokedexView extends ItemView {
 		for (const m of currentMoves(p, mon.level)) moves.createSpan({ cls: 'sheiko-pokedex-hero-move', text: m.name });
 		const next = nextMove(p, mon.level);
 		const facts: string[] = [next ? `Next move: ${next.name} at Lv ${next.level}` : 'All moves learned'];
-		facts.push(evolutionHint(p.dex, mon, data.stones));
+		facts.push(evolutionHint(p.dex, mon, data.stones, data.tradeItems, speciesUpTo(data.unlockedGen)));
 		info.createDiv({ cls: 'sheiko-pokedex-hero-facts', text: facts.join(' · ') });
 
 		const buttons = info.createDiv({ cls: 'sheiko-pokedex-hero-buttons' });

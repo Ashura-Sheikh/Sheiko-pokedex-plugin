@@ -3,7 +3,10 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SPRITES_GITIGNORE, SPRITE_COUNT, SpriteFs, saveSpritesAtomically, spriteFileName } from '../src/sprites';
+import { SPRITES_GITIGNORE, SpriteFs, saveSpritesAtomically, spriteFileName } from '../src/sprites';
+
+/** Gen 1's 151: the save is checked with a full Gen 1 set, as before 2.0.0. */
+const SPRITE_COUNT = 151;
 
 const DIR = 'plugins/sheiko-pokedex/sprites';
 

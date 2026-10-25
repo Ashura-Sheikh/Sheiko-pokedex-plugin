@@ -4,13 +4,16 @@
 //
 // The one rule that matters most: nothing shown, its order or its count may reveal
 // anything about an unseen Pokémon (its name, types, rarity or anything else hidden).
+//
+// 2.0.0 (#46): a Gen filter, and locked cards (a Gen not unlocked yet). A locked card is treated
+// exactly like an unseen one in every rule here (project-manager's read, 2026-10-25).
 
-import { GEN1 } from './data/gen1';
+import { ALL_SPECIES } from './gens';
 import { START_LEVEL } from './progression';
 import type { Species, Tier } from './species';
 import type { PokedexData } from './store';
 
-/** All 151 (the default, Sheikh 2026-10-15), only caught, or only unseen. */
+/** All (the default, Sheikh 2026-10-15), only caught, or only unseen (locked cards included). */
 export type Scope = 'all' | 'caught' | 'uncaught';
 export const SCOPES: readonly Scope[] = ['all', 'caught', 'uncaught'];
 
@@ -22,6 +25,8 @@ export interface BrowseControls {
 	type: string | null;
 	/** A rarity tier, or null for Any. */
 	tier: Tier | null;
+	/** A Gen such as 2, or null for All (2.0.0). */
+	gen: number | null;
 	sort: SortKey;
 }
 
@@ -34,11 +39,11 @@ export type SortKey = 'number' | 'name' | 'level' | 'catches' | 'newest' | 'olde
 export const SORT_KEYS: readonly SortKey[] = ['number', 'name', 'level', 'catches', 'newest', 'oldest'];
 
 export function defaultControls(): BrowseControls {
-	return { scope: 'all', search: '', type: null, tier: null, sort: 'number' };
+	return { scope: 'all', search: '', type: null, tier: null, gen: null, sort: 'number' };
 }
 
-/** Every type in the Gen 1 data, sorted. Listing them reveals nothing about which are caught. */
-export function allTypes(all: readonly Species[] = GEN1): string[] {
+/** Every type in the data, sorted. Listing them reveals nothing about which are caught. */
+export function allTypes(all: readonly Species[] = ALL_SPECIES): string[] {
 	return [...new Set(all.flatMap((p) => p.types))].sort();
 }
 
@@ -52,7 +57,10 @@ export function parseDexQuery(q: string): number | null {
 
 export interface BrowseCell {
 	dex: number;
+	/** Caught, and in an unlocked Gen. */
 	seen: boolean;
+	/** In a Gen that isn't unlocked yet (drawn with a lock; otherwise exactly like unseen). */
+	locked: boolean;
 }
 
 /**
@@ -66,9 +74,9 @@ export interface BrowseResult {
 	state: BrowseState;
 }
 
-export type BrowseData = Pick<PokedexData, 'caught' | 'mons'>;
+export type BrowseData = Pick<PokedexData, 'caught' | 'mons' | 'unlockedGen'>;
 
-export function browse(data: BrowseData, c: BrowseControls, all: readonly Species[] = GEN1): BrowseResult {
+export function browse(data: BrowseData, c: BrowseControls, all: readonly Species[] = ALL_SPECIES): BrowseResult {
 	const isCaught = (dex: number) => Object.prototype.hasOwnProperty.call(data.caught, String(dex));
 	const query = c.search.trim().toLowerCase();
 	const dexQuery = parseDexQuery(query);
@@ -77,7 +85,9 @@ export function browse(data: BrowseData, c: BrowseControls, all: readonly Specie
 	const filtering = c.type !== null || c.tier !== null;
 	const cells: BrowseCell[] = [];
 	for (const p of all) {
-		const seen = isCaught(p.dex);
+		const locked = p.gen > data.unlockedGen;
+		const seen = !locked && isCaught(p.dex);
+		if (c.gen !== null && p.gen !== c.gen) continue;
 		if (c.scope === 'caught' && !seen) continue;
 		if (c.scope === 'uncaught' && seen) continue;
 		if (filtering) {
@@ -94,7 +104,7 @@ export function browse(data: BrowseData, c: BrowseControls, all: readonly Specie
 				continue;
 			}
 		}
-		cells.push({ dex: p.dex, seen });
+		cells.push({ dex: p.dex, seen, locked });
 	}
 	sortCells(cells, c.sort, data, all);
 	const anyCaught = Object.keys(data.caught).length > 0;

@@ -18,7 +18,9 @@ import {
 } from '../src/partner-anim';
 import { DEFAULT_SETTINGS, freshData, normalizeData } from '../src/store';
 import { seededRandom } from '../src/rarity';
-import { GEN1 } from '../src/data/gen1';
+import { speciesUpTo } from '../src/gens';
+/** Gen 1's species: these tests check Gen 1 behaviour, as before 2.0.0. */
+const GEN1 = speciesUpTo(1);
 
 const NOW = new Date('2026-10-25T12:00:00Z');
 // Tests run from test-dist/, one level below the repo root (see test/run.mjs).

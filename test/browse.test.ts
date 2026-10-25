@@ -3,15 +3,19 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BrowseControls, BrowseData, SORT_KEYS, SortKey, allTypes, browse, defaultControls, parseDexQuery } from '../src/browse';
-import { GEN1 } from '../src/data/gen1';
+import { BrowseControls, BrowseData, SORT_KEYS, SortKey, allTypes, browse as browseAll, defaultControls, parseDexQuery } from '../src/browse';
+import { speciesUpTo } from '../src/gens';
+/** Gen 1's species: these tests check Gen 1 behaviour, as before 2.0.0. */
+const GEN1 = speciesUpTo(1);
+/** The 1.3.0 tests run on Gen 1 only; the Gen 2 tests below pass the full list. */
+const browse = (d: BrowseData, c: BrowseControls) => browseAll(d, c, GEN1);
 import { TIERS } from '../src/species';
 
 const AT = '2026-10-15T12:00:00.000Z';
 
 /** Caught data for the given dex numbers. */
 function caught(dexes: number[]): BrowseData {
-	const data: BrowseData = { caught: {}, mons: {} };
+	const data: BrowseData = { caught: {}, mons: {}, unlockedGen: 1 };
 	for (const d of dexes) {
 		data.caught[String(d)] = { count: 1, firstAt: AT, lastAt: AT };
 		data.mons[String(d)] = { level: 5, xp: 0 };
@@ -25,7 +29,7 @@ const dexes = (r: ReturnType<typeof browse>) => r.cells.map((c) => c.dex);
 // ---------- #32: scope ----------
 
 test('defaults: scope All (Sheikh, 2026-10-15), all 151 in Pokedex order', () => {
-	assert.deepEqual(defaultControls(), { scope: 'all', search: '', type: null, tier: null, sort: 'number' });
+	assert.deepEqual(defaultControls(), { scope: 'all', search: '', type: null, tier: null, gen: null, sort: 'number' });
 	const r = browse(caught([4, 25]), defaultControls());
 	assert.equal(r.cells.length, GEN1.length);
 	assert.deepEqual(dexes(r), GEN1.map((p) => p.dex));
@@ -86,8 +90,8 @@ test('a name search never shows an unseen Pokémon, in any scope', () => {
 
 test('number search finds caught and unseen cards alike (numbers are already shown)', () => {
 	const data = caught([25]);
-	assert.deepEqual(browse(data, controls({ search: '#025' })).cells, [{ dex: 25, seen: true }]);
-	assert.deepEqual(browse(data, controls({ search: '6' })).cells, [{ dex: 6, seen: false }]);
+	assert.deepEqual(browse(data, controls({ search: '#025' })).cells, [{ dex: 25, seen: true, locked: false }]);
+	assert.deepEqual(browse(data, controls({ search: '6' })).cells, [{ dex: 6, seen: false, locked: false }]);
 	assert.deepEqual(browse(data, controls({ scope: 'caught', search: '6' })).cells, []);
 	assert.deepEqual(browse(data, controls({ search: '152' })).cells, [], 'no #152 in Gen 1');
 });
@@ -199,7 +203,7 @@ test('missing level or date: the starting level and the oldest date', () => {
 
 test('Clear restores the documented defaults: All, empty search, Any, Any, Pokedex number', () => {
 	const cleared = defaultControls();
-	assert.deepEqual(cleared, { scope: 'all', search: '', type: null, tier: null, sort: 'number' });
+	assert.deepEqual(cleared, { scope: 'all', search: '', type: null, tier: null, gen: null, sort: 'number' });
 	// Each call is a fresh object, so a reset can't share state with an earlier one.
 	assert.notEqual(defaultControls(), defaultControls());
 	// After Clear, the grid is the full 151 in order again.
