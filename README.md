@@ -1,6 +1,6 @@
 # Sheiko Pokedex
 
-An Obsidian plugin that turns finishing tasks into catching Pokémon. Close tasks in [TaskNotes](https://github.com/callumalpass/tasknotes) and catch a random Gen 1 Pokémon every 4–7 closes; the more you close in a day, the better your odds. Pick a partner, level it up from your work, evolve it, and fill your Pokedex.
+An Obsidian plugin that turns finishing tasks into catching Pokémon. Close tasks in [TaskNotes](https://github.com/callumalpass/tasknotes) and catch a random Pokémon every 4–7 closes; the more you close in a day, the better your odds. Pick a partner, level it up from your work, evolve it, and fill your Pokedex. Gen 1 is open from the start; **Gen 2 unlocks as you play** (since 2.0.0).
 
 > **Unofficial fan project.** Not affiliated with, endorsed by, or sponsored by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company. Pokémon and Pokémon names are trademarks of their respective owners. **This repository contains no Pokémon artwork.** By default every Pokémon is drawn as a coloured placeholder badge. Sprites are optional: you download them yourself from the plugin's settings (see [Sprites](#sprites-optional-downloaded-by-you)).
 
@@ -85,7 +85,7 @@ If your vault is in git, add `.obsidian/plugins/sheiko-pokedex/` to its `.gitign
    | 7 | 12 | 35 | 41 | 12 |
    | 8 | 8 | 32 | 45 | 15 |
 
-7. **Species:** the `contexts` of every close in the batch narrow which types can appear. The mapping is editable in the plugin's settings. If no species in the drawn tier matches, any species in that tier can appear.
+7. **Species:** any species of the **unlocked Gens** (Gen 1, then Gen 2; see [Generations](#generations-since-200)). The `contexts` of every close in the batch narrow which types can appear. The mapping is editable in the plugin's settings. If no species in the drawn tier matches, any species in that tier can appear.
 8. **Draws are seeded,** so the logic is repeatable and testable. The hidden target is seeded from the install time and the catch number.
 
 Task size (worked time) doesn't affect rarity. It scales your partner's XP (below).
@@ -108,6 +108,21 @@ A toolbar above the grid (since 1.3.0):
 - So no search, filter, sort or count reveals anything about a Pokémon you haven't caught.
 
 The toolbar settings last while the view is open, including when it refreshes after a catch. They're never saved, and browsing never changes your data.
+
+## Generations (since 2.0.0)
+
+Gen 1 (#1–151) is open from the start. **Gen 2 (#152–251, 100 Pokémon, including Raikou, Entei, Suicune, Lugia, Ho-Oh and Celebi) unlocks as you play**:
+
+- **The rule:** catch **3 Pokémon** and level **one Pokémon up by 2 levels**, or **evolve any Pokémon**. Later Gens will use the same rule, counted again from each unlock.
+- **Updating from 1.x:** if you already meet the rule, Gen 2 unlocks straight away. Evolutions before 2.0.0 weren't recorded as such, so the plugin works them out: a Pokémon you have more copies of than you caught (not counting a Starter pack pick) got the extra by evolving.
+- **Before it unlocks:** Gen 2's cards show as **locked**: a number and a lock, nothing else. They're treated exactly like unseen cards (no name search, hidden by type and rarity filters, not clickable). A panel above the grid shows your progress. Nothing from Gen 2 can be caught, evolved into or found, and no hint names a Gen 2 evolution.
+- **When it unlocks:** a notice says so. Gen 2 Pokémon can be caught, and the new evolutions and items open.
+- **Gen 1 changes after the unlock:**
+  - **8 gain a baby form before them:** Pikachu (Pichu), Clefairy (Cleffa), Jigglypuff (Igglybuff), Hitmonlee and Hitmonchan (Tyrogue), Jynx (Smoochum), Electabuzz (Elekid), Magmar (Magby).
+  - **10 gain an evolution:** Golbat → Crobat, Eevee → Espeon and Umbreon, Chansey → Blissey, Gloom → Bellossom, Poliwhirl → Politoed, Slowpoke → Slowking, Onix → Steelix, Scyther → Scizor, Seadra → Kingdra, Porygon → Porygon2.
+- **Filling Gen 1 slows down after the unlock (a known trade-off).** A catch picks a rarity, then any unlocked species of it, with no preference for ones you haven't caught. With Gen 2 open, about 60% of catches are Gen 1 (151 of 251 species; it varies by rarity). Grass catches also split between the Leaf and the Sun Stone, so Gen 1's Leaf Stone evolutions come a little slower.
+- **The Pokedex view** has a Gen filter and a count per Gen (a locked Gen shows "Locked").
+- **Coming next:** more Gens, one at a time, each unlocked the same way. No dates.
 
 ## Partner, levels, evolution and stones
 
@@ -146,21 +161,36 @@ The toolbar settings last while the view is open, including when it refreshes af
   | Fire | Fire Stone |
   | Water, Ice | Water Stone |
   | Electric | Thunder Stone |
-  | Grass, Bug | Leaf Stone |
+  | Grass | Leaf Stone; with Gen 2 unlocked, a Leaf or a **Sun Stone** at random |
+  | Bug | Leaf Stone |
   | Fairy, Normal, Poison | Moon Stone |
   | Psychic, Fighting, Rock, Ground, Ghost | Trade Stone |
-  | anything else | a random one |
+  | anything else | a random one of the unlocked Gens |
 
   The primary type is checked first, then the second.
-- **Using a stone:** click the Pokémon in the Pokedex and choose the stone. The **Trade Stone** stands in for Gen 1's trade evolutions (Kadabra, Machoke, Graveler, Haunter). Eevee's form depends on the stone (Water, Thunder or Fire).
-- **Moves:** each Pokémon uses its original **Red/Blue level-up moves**.
+- **Trade Items (with Gen 2 unlocked):** items for evolutions that aren't by level or stone. Your **partner's** primary type decides which one you find:
+
+  | Partner's type | Trade Item | Used for |
+  |---|---|---|
+  | Water, Psychic | King's Rock | Politoed, Slowking |
+  | Steel, Bug, Rock, Ground | Metal Coat | Steelix, Scizor |
+  | Dragon, Ice | Dragon Scale | Kingdra |
+  | Electric | Up-Grade | Porygon2 |
+  | Normal, Fairy, Poison, Flying | Friendship Charm | Pichu, Cleffa, Igglybuff, Togepi, Golbat, Chansey, Eevee (Espeon, Umbreon) |
+  | Fighting, Fire, Grass, Ghost, Dark | Trade Item | Tyrogue (Hitmonlee, Hitmonchan, Hitmontop) |
+
+  - **20%** on each level your partner gains from a close.
+  - **30%** each time a hidden 2–4 counted closes fill up (a new target is drawn each time). Closes over the daily limit don't count toward it.
+  - No partner, no Trade Item. To get a different item, change partner.
+- **Using a stone or Trade Item:** click the Pokémon in the Pokedex and choose it. The **Trade Stone** stands in for plain trade evolutions (Kadabra, Machoke, Graveler, Haunter). Eevee's form depends on the stone (Water, Thunder or Fire), or the Friendship Charm with Gen 2 unlocked (Espeon or Umbreon, your choice).
+- **Moves:** Gen 1 uses its original **Red/Blue level-up moves**; Gen 2 uses **X/Y** level-up moves.
   - **Under each card:** the moves it knows now, meaning the last 4 learned by its level, as in the games.
   - **Detail window:** the full list with levels: ✓ for the 4 it knows, faded for moves it has outgrown, → for the next one (e.g. "next: Rage at Lv 22").
   - **Level-ups:** the XP notice and the reward window add "Learned Ember!".
   - An evolved form already knows its pre-evolution's starting moves. Red/Blue lists 101 such moves twice; only the first entry is kept.
 - **Starter pack (once per install):** a one-time boost, in **Settings → Sheiko Pokedex → Starter pack** or as commands:
-  - **One of each stone:** a Fire, Water, Thunder, Leaf, Moon and Trade Stone, once.
-  - **Choose a Pokémon:** any one you haven't caught yet, legendaries included, once. It joins at level 5 and counts in your Pokedex, but not as a close or a catch. It's marked as from the Starter pack in the plugin's data.
+  - **One of each stone:** a Fire, Water, Thunder, Leaf, Moon and Trade Stone, once. Unchanged in 2.0.0: no Sun Stone and no Trade Items.
+  - **Choose a Pokémon:** any Gen 1 Pokémon you haven't caught yet, legendaries included, once. It joins at level 5 and counts in your Pokedex, but not as a close or a catch. It's marked as from the Starter pack in the plugin's data.
   - **500 XP for your partner, 3 times:** each use goes to whoever is your partner at the time, so you can split or stack them. About 3 uses take a level-5 Charmander to 16. With no partner, or a partner at level 100, nothing is used up.
 
   You're asked to confirm before anything is used. Once a part is used it's gone for this install: updates, reloads and setting changes never refill it. Commands for used-up parts disappear from the command list.
@@ -174,26 +204,28 @@ This repository and its releases never contain Pokémon artwork, and tests enfor
 
 The user guide's screenshots in `docs/images/` show placeholder badges only. Until you download sprites, every Pokémon is a coloured placeholder badge.
 
-To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokedex → Sprites** and press **Download sprites**.
+To see the classic 96×96 pixel sprites, go to **Settings → Sheiko Pokedex → Sprites** and press a **Download** button. Sprites come in groups, each with its own button: **Gen 1** (151) and **Gens 2–4** (100 now; Gens 3 and 4 join it when they're released). A button fetches only the sprites you don't have yet, so it can be pressed again after an update.
 
-- **Off by default.** Nothing is downloaded until you press the button. The plugin makes no other network requests.
-- **The network call:** 151 requests, one at a time with a short pause, to `raw.githubusercontent.com`, for the default sprites in [PokeAPI's sprite repository](https://github.com/PokeAPI/sprites) (`sprites/pokemon/1.png` to `151.png`). It takes about half a minute.
-- **Checks:** each image must be a PNG, 96×96 and under 64 KB. All 151 are downloaded and checked before anything is saved. If the source can't be reached or any image fails a check, nothing is saved and the badges stay. Saving is all-or-nothing too: the files go into a temporary folder that's only moved into place once every one is written, so a disk error partway through leaves nothing behind.
-- **Where they're saved:** `<your vault>/.obsidian/plugins/sheiko-pokedex/sprites/` (`001.png` to `151.png`), with a `.gitignore` that ignores the whole folder. They're checked again each time Obsidian loads them.
+- **Off by default.** Nothing is downloaded until you press a button. The plugin makes no other network requests.
+- **The network call:** one request per missing sprite, one at a time with a short pause, to `raw.githubusercontent.com`, for the default sprites in [PokeAPI's sprite repository](https://github.com/PokeAPI/sprites) (`sprites/pokemon/1.png` to `251.png`). Gen 1 takes about half a minute.
+- **Checks:** each image must be a PNG, 96×96 and under 64 KB. A group is downloaded and checked in full before anything is saved. If the source can't be reached or any image fails a check, nothing is saved and the badges stay. Saving is all-or-nothing too: the files go into a temporary folder that's only moved into place once every one is written, so a disk error partway through leaves nothing behind.
+- **Where they're saved:** `<your vault>/.obsidian/plugins/sheiko-pokedex/sprites/` (`001.png` to `251.png`), with a `.gitignore` that ignores the whole folder. They're checked again each time Obsidian loads them.
 - **Who owns them:** the artwork belongs to Nintendo / Game Freak. It is not covered by this plugin's licence or PokeAPI's. **Sprites are for your own use: don't commit, share or redistribute them.**
 - **To go back to badges,** press **Remove sprites** in the same place. That deletes the folder.
-- **Unseen Pokémon** show as black silhouettes.
+- **Unseen Pokémon** show as black silhouettes. **Locked** ones show a lock, never their sprite.
+- **Each group loads on its own:** if a group is incomplete, only that group shows badges.
 
 ## Data
 
-`src/data/gen1.ts` is generated from [PokeAPI's CSV data](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) by `scripts/build_gen1_data.py`. It holds names, types, capture rates, evolution links (with each stone) and Red/Blue level-up moves (989 after removing repeats). No images.
-- **Tiers:** legendary/mythical (5); then by capture rate: ≤ 45 rare (55), ≤ 120 uncommon (45), otherwise common (46).
+`src/data/pokedex.ts` is generated from [PokeAPI's CSV data](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv) by `scripts/build_species_data.py`. It holds names, types, capture rates, each species' Gen, evolution links (with each stone or Trade Item) and level-up moves: Red/Blue for #1–151 (989 after removing repeats) and X/Y for #152–251 (1,476). No images.
+- **Tiers** (#1–251): legendary/mythical (11); then by capture rate: ≤ 45 rare (95), ≤ 120 uncommon (76), otherwise common (69).
+- **Evolution methods:** level, a stone, a plain trade (the Trade Stone), or a Trade Item. A trade while holding an item uses that item; friendship, affection and beauty use the Friendship Charm; every other condition (stats, time of day, gender …) uses the general Trade Item.
 - **Types** are PokeAPI's current ones, so Clefairy is Fairy and Magnemite is Electric/Steel.
 
 To regenerate (needs `pokemon_species`, `pokemon_species_names`, `pokemon_types`, `types`, `pokemon_evolution`, `items`, `pokemon_moves`, `move_names` and `moves` CSVs):
 
 ```
-python3 -I scripts/build_gen1_data.py <folder with the CSV files>
+python3 -I scripts/build_species_data.py <folder with the CSV files>
 ```
 
 ## Support
@@ -210,7 +242,7 @@ npm test        # Node's built-in test runner, obsidian mocked; no network, no r
 npm run lint
 ```
 
-**Test tools (development builds only):** a `npm run dev` build adds a **Test tools** setting with unlimited commands: give the partner 500 XP, give one of each stone, and add any Pokémon. Release builds (`npm run build`, which the release workflow uses) don't contain them, and a test builds the release bundle and checks.
+**Test tools (development builds only):** a `npm run dev` build adds a **Test tools** setting with unlimited commands: give the partner 500 XP, give one of each stone and Trade Item, and add any Pokémon. Release builds (`npm run build`, which the release workflow uses) don't contain them, and a test builds the release bundle and checks.
 
 **CI:** `.github/workflows/ci.yml` runs build, lint and test on Node 20, 22 and 24 for every pull request into `main` and every push to `main`.
 
@@ -236,7 +268,7 @@ If you open the repo folder itself as an Obsidian test vault, its `.obsidian/`, 
 
 ## Third-party notices
 
-`src/data/gen1.ts`, and therefore `main.js`, contains data generated from [PokeAPI](https://github.com/PokeAPI/pokeapi)'s CSV files. PokeAPI's licence is reproduced below, as its second condition asks. The same notice sits at the end of every built `main.js`, so it reaches people who install from a release too.
+`src/data/pokedex.ts`, and therefore `main.js`, contains data generated from [PokeAPI](https://github.com/PokeAPI/pokeapi)'s CSV files. PokeAPI's licence is reproduced below, as its second condition asks. The same notice sits at the end of every built `main.js`, so it reaches people who install from a release too.
 
 ```text
 Copyright (c) © 2013–2023 Paul Hallett and PokéAPI contributors (https://github.com/PokeAPI/pokeapi#contributing). Pokémon and Pokémon character names are trademarks of Nintendo.

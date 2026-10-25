@@ -47,13 +47,15 @@ Prefer something quieter? Turn off **Show reward window** in the plugin's settin
 Open it from the ribbon icon (**Open Pokedex**), from the **Open Pokedex** command, or with **Open Pokedex** in the reward window.
 
 - **Partner card** at the top: your partner with its level and XP bar, its current moves, its next move and what it evolves into. **Details** opens its full page; **Change partner** picks another.
-- **Stats:** species caught out of 151, total catches, catches and closes today, progress toward the next catch, and how many of each rarity you've caught.
-- **Stones:** how many of each of the 6 stones you hold (Fire, Water, Thunder, Leaf, Moon, Trade). Stones you have none of are dimmed.
-- **The grid:** all 151 Gen 1 Pokémon. The ones you've caught show their name, level, types and the 4 moves they know. The rest show as **???**.
+- **Stats:** species caught out of those unlocked, a count per Gen (a locked Gen shows **Locked**), total catches, catches and closes today, progress toward the next catch, and how many of each rarity you've caught.
+- **Stones:** how many of each stone you hold (Fire, Water, Thunder, Leaf, Moon, Trade; the Sun Stone once Gen 2 is unlocked). With Gen 2 unlocked, a second row shows your **Trade Items**. Ones you have none of are dimmed.
+- **Unlock panel** (until Gen 2 is unlocked): your progress toward it. Gen 2 unlocks when you've caught 3 Pokémon and levelled one up by 2 levels, or as soon as you evolve any Pokémon.
+- **The grid:** every Pokémon, Gen 1 then Gen 2. The ones you've caught show their name, level, types and the 4 moves they know. The rest show as **???**, and Gen 2's show a **lock** until it's unlocked.
 - **Toolbar** (above the grid, since 1.3.0):
   - **All · Caught · Uncaught:** which Pokémon to show. It starts on All.
   - **Search:** part of a caught Pokémon's name (e.g. "char"), or a number such as `25` or `#025`.
   - **Type** and **Rarity:** show only caught Pokémon of that type or rarity.
+  - **Gen:** show one Gen (since 2.0.0).
   - **Sort:** Pokedex number, name, level, catches, or date added (newest or oldest). "Date added" is when the Pokémon joined your Pokedex, including by evolving or from the Starter pack.
   - **Clear:** back to All, no search, any type, any rarity, Pokedex number.
 
@@ -72,10 +74,10 @@ Click any Pokémon you've caught to open its details.
 ![A Pokémon's details: Charmander, level 18, with its XP bar, its Red/Blue level-up moves and Make partner](images/detail-view.png)
 
 - Its number, rarity, types, level and XP.
-- **Moves:** the full Red/Blue list with the level each is learned at. ✓ marks the 4 it knows now, faded moves are ones it has outgrown, and → marks the next one.
+- **Moves:** the full level-up list (Red/Blue for Gen 1, X/Y for Gen 2) with the level each is learned at. ✓ marks the 4 it knows now, faded moves are ones it has outgrown, and → marks the next one.
 - How many times you've caught it, and when you first did.
 - **Make partner** (or **Partner**, if it already is).
-- A button for each stone that would evolve it, with how many of that stone you have.
+- A button for each stone or Trade Item that would evolve it, with how many you have.
 
 ## 5. Your partner in the status bar
 
@@ -108,14 +110,14 @@ Press **Evolve** and the same Evolution scene plays. As in the game, a stone evo
 
 ## 7. Sprites (optional)
 
-Out of the box, every Pokémon is a placeholder badge, and the plugin makes no network requests. To see the classic pixel sprites instead, go to **Settings → Sheiko Pokedex → Sprites** and press **Download sprites**.
+Out of the box, every Pokémon is a placeholder badge, and the plugin makes no network requests. To see the classic pixel sprites instead, go to **Settings → Sheiko Pokedex → Sprites** and press **Download Gen 1** (and **Download Gens 2–4** for Gen 2). Each button fetches only the sprites you don't have yet.
 
 ![The Sprites section in the plugin's settings, after a download](images/settings-sprites.png)
 
 The settings explain each part before you press anything:
 
-- **What you get:** 151 pixel sprites, about 120 KB in total.
-- **Where they come from:** PokeAPI's sprite repository on GitHub. It's 151 requests, one at a time, and takes about 30 seconds.
+- **What you get:** pixel sprites of about 1 KB each: 151 for Gen 1, 100 for Gen 2.
+- **Where they come from:** PokeAPI's sprite repository on GitHub. One request per missing sprite, one at a time; Gen 1 takes about 30 seconds.
 - **Checks:** every image is checked before anything is saved. If anything fails, nothing is saved and the badges stay, and the settings show why.
 - **Where they are saved:** in the plugin's own folder, with a `.gitignore` so a vault kept in git won't commit them.
 - **Who owns them:** the artwork belongs to Nintendo / Game Freak. Keep it for your own use: don't commit, share or redistribute it.
