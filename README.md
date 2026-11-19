@@ -102,7 +102,9 @@ Unlock details and the Gen 1 trade-off: [How it works → Unlocking Gens](docs/H
   - **Off:** nothing.
 
   Thanks to @DiditaDeliaAndreea for the idea (#31).
-- **Status bar:** shows the partner and its level, e.g. "Charmeleon Lv 17".
+- **Status bar:** shows the partner and its level, e.g. "Charmeleon Lv 17", with a small picture of it (its badge, or its sprite if you downloaded sprites).
+  - **When a close counts:** the picture hops. A catch makes it hop higher with a few small dots, after you close the reward window. Closes over the daily limit, and closes that don't count, don't move it. A burst of closes moves it once.
+  - **Status bar partner** setting: **Animated** (default), **Still** (shown, no movement) or **Hidden** (name and level only, as before 2.1.0). It also sets your partner in the reward window: it hops by the caught Pokémon when Animated, stays still when Still, and isn't shown when Hidden. When your system asks for reduced motion, Animated acts as Still.
   - **Hover:** XP (e.g. "140 / 170 XP") and whether an evolution is available.
   - **Click:** opens the Pokedex, or the partner picker if no partner is set yet.
   - **Right-click:** Open Pokedex, Choose partner and, once the partner has reached its evolution level (including after a Cancel), **Evolve now**.

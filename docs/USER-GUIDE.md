@@ -35,6 +35,7 @@ The number of closes needed is hidden and changes after every catch (somewhere f
 - the Pokémon, its number, its rarity (Common, Uncommon, Rare or Legendary) and its types
 - why you got that rarity: how many closes were in the batch, their average score, any daily boost, and the final score out of 8
 - your partner's XP, and "grew to Lv …!" or "Learned …!" when it levels up
+- your partner, small, by the Pokémon you caught: it hops once (see **Status bar partner** in section 5)
 - "You found a … Stone!" when the catch also finds a stone
 - **Open Pokedex** or **Nice**
 
@@ -89,7 +90,17 @@ Click any Pokémon you've caught to open its details.
 
 ## 5. Your partner in the status bar
 
-Your partner sits in Obsidian's status bar, for example "Charmeleon Lv 18".
+Your partner sits in Obsidian's status bar, for example "Charmeleon Lv 18", with a small picture of it: its badge, or its sprite if you downloaded sprites.
+
+When a close counts toward your next catch, the picture hops. When you catch a Pokémon, it hops higher with a few small dots, once you close the reward window. Closes over the daily limit don't move it, and a burst of closes moves it once. It stays still the rest of the time.
+
+Choose in **Settings → Sheiko Pokedex → Status bar partner**:
+
+- **Animated** (default): hops as above, and hops in the reward window too.
+- **Still:** the picture is shown in both places but doesn't move.
+- **Hidden:** name and level only, and no partner in the reward window.
+
+If your system asks for reduced motion, Animated acts as Still.
 
 ![Hovering over the partner in the status bar shows its level and XP](images/status-bar-hover.png)
 
