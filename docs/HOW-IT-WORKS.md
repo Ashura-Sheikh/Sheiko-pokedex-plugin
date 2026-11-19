@@ -65,7 +65,7 @@ The rules behind each feature: odds, XP, limits and timing. For what the plugin 
   - without a partner, no XP is earned, and the notice says so
 - **Levels:** every caught Pokémon starts at level 5 and keeps its own level and XP, so swapping partners loses nothing. Going from level L to L+1 takes 10 × L XP, up to level 100.
 - **Partner animation:** about a second long. Calm has no movement. It doesn't loop and waits 2 seconds before it can play again. When your system asks for reduced motion, Full plays as Calm. In the Pokedex view only the partner card animates; the grid doesn't.
-- **Status bar partner (2.1.0):** a 16 px picture next to the partner's name, still between closes.
+- **Status bar partner (2.1.0):** a 20 px picture next to the partner's name, still between closes.
   - A counted close: a 450 ms hop. A catch: an 800 ms double hop with 3 small dots in the partner's type colour. Over the daily limit, excluded or already counted: no move.
   - Catch with the reward window on: the move plays when the window closes. If an evolution scene opens straight after, the move isn't replayed.
   - The 2-second cooldown, counted from the start of a move, plays one move for a burst of closes. A catch replaces a hop inside it; a hop never replaces a catch.

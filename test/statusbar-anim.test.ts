@@ -185,7 +185,10 @@ test('CSS: the moves use transform only, particles take no clicks, reduced motio
 	assert.match(reduced, /\.sheiko-pokedex-status-particles \{ display: none; \}/);
 });
 
-test('CSS: the mini badge is 16 px, so the status bar keeps its height', () => {
-	assert.match(CSS, /\.sheiko-pokedex-badge-mini \{ width: 16px; height: 16px;/);
-	assert.match(CSS, /\.sheiko-pokedex-status-mini \{[^}]*width: 16px; height: 16px;/);
+test('CSS sizes (Sheikh 2026-11-19, (a)): status bar box 20 px, sprite 36 px; reward window box 40 px, sprite 72 px', () => {
+	assert.match(CSS, /\.sheiko-pokedex-badge-mini \{ width: 20px; height: 20px;/);
+	assert.match(CSS, /\.sheiko-pokedex-status-mini \{[^}]*width: 20px; height: 20px;/);
+	assert.match(CSS, /\.sheiko-pokedex-badge-mini\.has-sprite \.sheiko-pokedex-sprite \{[^}]*width: 36px;\s*height: 36px;/);
+	assert.match(CSS, /\.sheiko-pokedex-reward-partner \.sheiko-pokedex-badge-mini \{ width: 40px; height: 40px;/);
+	assert.match(CSS, /\.sheiko-pokedex-reward-partner \.sheiko-pokedex-badge-mini\.has-sprite \.sheiko-pokedex-sprite \{ width: 72px; height: 72px; \}/);
 });
