@@ -41,7 +41,7 @@ The number of closes needed is hidden and changes after every catch (somewhere f
 
 Prefer something quieter? Turn off **Show reward window** in the plugin's settings to get a short notice instead.
 
-![The reward window: Jolteon caught, the batch's closes, average and score out of 8, and the partner's XP](images/reward-window.png)
+![The reward window: Slowking caught, with the partner Pikachu's badge by it, the batch's closes, average, daily boost and score out of 8, and the partner's XP](images/reward-window.png)
 
 ## 3. The Pokedex view
 
@@ -92,6 +92,8 @@ Click any Pokémon you've caught to open its details.
 
 Your partner sits in Obsidian's status bar, for example "Charmeleon Lv 18", with a small picture of it: its badge, or its sprite if you downloaded sprites.
 
+![The status bar: Pikachu's badge next to "Pikachu Lv 5", beside other status bar items](images/status-bar-partner.png)
+
 When a close counts toward your next catch, the picture hops. When you catch a Pokémon, it hops higher with a few small dots, once you close the reward window. Closes over the daily limit don't move it, and a burst of closes moves it once. It stays still the rest of the time.
 
 Choose in **Settings → Sheiko Pokedex → Status bar partner**:
@@ -101,6 +103,8 @@ Choose in **Settings → Sheiko Pokedex → Status bar partner**:
 - **Hidden:** name and level only, and no partner in the reward window.
 
 If your system asks for reduced motion, Animated acts as Still.
+
+![The Status bar partner setting with its three options: Animated, Still and Hidden](images/status-bar-partner-setting.png)
 
 ![Hovering over the partner in the status bar shows its level and XP](images/status-bar-hover.png)
 
