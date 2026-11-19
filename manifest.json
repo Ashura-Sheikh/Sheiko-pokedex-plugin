@@ -1,7 +1,7 @@
 {
 	"id": "sheiko-pokedex",
 	"name": "Sheiko Pokedex",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"minAppVersion": "1.13.0",
 	"description": "Close tasks to catch Pokémon, level up a partner and fill your Pokedex, Gen 1 and Gen 2. Needs TaskNotes and Sheiko Task Lifecycle.",
 	"author": "Sheikh M Sahil",
