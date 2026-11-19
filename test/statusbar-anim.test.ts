@@ -46,6 +46,9 @@ test('Status bar partner: each saved mode is kept; unknown or wrong values fall 
 	}
 	for (const bad of ['full', 'calm', 'off', 'Animated', '', 1, null, true]) {
 		assert.equal(parseStatusBarMode(bad), 'animated', String(bad));
+		// Through loading too: a bad saved value must not reach the settings.
+		const loaded = normalizeData({ version: 3, settings: { statusBarPartner: bad }, capUpgrade: 'done' }, NOW);
+		assert.equal(loaded.settings.statusBarPartner, 'animated', `loaded ${String(bad)}`);
 	}
 });
 
