@@ -310,7 +310,55 @@
 @media (prefers-reduced-motion: reduce) {
 	.sheiko-pokedex-hero-art[data-motion] .sheiko-pokedex-badge { animation: none; }
 	.sheiko-pokedex-anim-layer { display: none; }
+	.sheiko-pokedex-status-mini.is-hop,
+	.sheiko-pokedex-status-mini.is-catch,
+	.sheiko-pokedex-reward-partner.is-hop { animation: none; }
+	.sheiko-pokedex-status-particles { display: none; }
 }
+
+/* Status bar partner (2.1.0, #53). A 16px mini badge or sprite next to the text. It moves with
+   transform only, so the status bar's height and the other items never shift. */
+.sheiko-pokedex-badge-mini { width: 16px; height: 16px; font-size: 9px; border-width: 1px; margin: 0; flex: none; }
+.sheiko-pokedex-badge-mini.has-sprite { position: relative; border: none; background: none; overflow: visible; }
+.sheiko-pokedex-badge-mini.has-sprite .sheiko-pokedex-sprite {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 24px;
+	height: 24px;
+	transform: translate(-50%, -50%);
+	image-rendering: auto;
+}
+.sheiko-pokedex-status.has-mini { display: inline-flex; align-items: center; gap: 4px; }
+.sheiko-pokedex-status-mini { position: relative; display: inline-flex; width: 16px; height: 16px; flex: none; pointer-events: none; }
+.sheiko-pokedex-status-art { display: inline-flex; }
+.sheiko-pokedex-status-mini.is-hop { animation: sheiko-pokedex-mini-hop 450ms ease-out 1; }
+.sheiko-pokedex-status-mini.is-catch { animation: sheiko-pokedex-mini-catch 800ms ease-out 1; }
+@keyframes sheiko-pokedex-mini-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-4px); } }
+@keyframes sheiko-pokedex-mini-catch { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-7px); } 50% { transform: translateY(0); } 70% { transform: translateY(-3px); } }
+.sheiko-pokedex-status-particles { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.sheiko-pokedex-status-particle {
+	position: absolute;
+	left: var(--x);
+	top: var(--y);
+	width: 3px;
+	height: 3px;
+	margin: -1.5px 0 0 -1.5px;
+	border-radius: 50%;
+	background: var(--sheiko-pokedex-anim-colour);
+	opacity: 0;
+	pointer-events: none;
+	animation: sheiko-pokedex-particle 600ms ease-out var(--delay) 1 both;
+}
+
+/* The partner by the caught Pokémon in the reward window (2.1.0, #56). */
+.sheiko-pokedex-reward-art { position: relative; width: 120px; margin: 0 auto 8px; }
+.sheiko-pokedex-reward-art > .sheiko-pokedex-badge-large { margin: 0; }
+.sheiko-pokedex-reward-partner { position: absolute; right: -12px; bottom: -4px; }
+.sheiko-pokedex-reward-partner .sheiko-pokedex-badge-mini { width: 32px; height: 32px; font-size: 15px; border-width: 2px; }
+.sheiko-pokedex-reward-partner .sheiko-pokedex-badge-mini.has-sprite .sheiko-pokedex-sprite { width: 48px; height: 48px; }
+.sheiko-pokedex-reward-partner.is-hop { animation: sheiko-pokedex-reward-hop 600ms ease-out 300ms 1 both; }
+@keyframes sheiko-pokedex-reward-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } }
 
 /* Gen 2 (2.0.0, #46). Locked cards: a lock on the unseen badge, no art. Unlock progress panel. */
 .sheiko-pokedex-badge.sheiko-pokedex-lock { display: flex; align-items: center; justify-content: center; color: var(--text-faint); }

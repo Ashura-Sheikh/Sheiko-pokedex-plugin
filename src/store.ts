@@ -55,6 +55,7 @@ import {
 } from './gens';
 import { STONE_KINDS, StoneKind, TRADE_ITEM_KINDS, TradeItemKind } from './species';
 import { AnimMode, parseAnimMode } from './partner-anim';
+import { DEFAULT_STATUS_BAR_MODE, StatusBarMode, parseStatusBarMode } from './statusbar-anim';
 
 export interface Settings {
 	/** Catches per day. Closes after the limit is reached earn nothing and never pay out later. */
@@ -74,6 +75,8 @@ export interface Settings {
 	calmEvolution: boolean;
 	/** Partner animation on the hero card (1.5.0, #31): Full / Calm / Off. Reduced motion gives Calm. */
 	partnerAnimation: AnimMode;
+	/** Mini partner in the status bar (2.1.0, #53): Animated / Still / Hidden. Reduced motion gives Still. */
+	statusBarPartner: StatusBarMode;
 }
 
 export const DEFAULT_CONTEXT_TYPES = [
@@ -101,6 +104,8 @@ export const DEFAULT_SETTINGS: Settings = {
 	calmEvolution: false,
 	/** Calm on new installs and for existing users (Sheikh, 2026-10-25). */
 	partnerAnimation: 'calm',
+	/** Animated on new installs and for existing users (Sheikh, 2026-11-19). */
+	statusBarPartner: DEFAULT_STATUS_BAR_MODE,
 };
 
 /** Credit a bulk close gets toward the next catch and the daily boost (option C, Sheikh 2026-10-12). */
@@ -267,6 +272,8 @@ export function normalizeData(raw: unknown, now: Date): PokedexData {
 	const settings: Settings = { ...DEFAULT_SETTINGS, ...savedSettings };
 	// 1.5.0 (#31): missing (data from 1.4.0 or earlier) or unknown → Calm.
 	settings.partnerAnimation = parseAnimMode(savedSettings.partnerAnimation);
+	// 2.1.0 (#53): missing (data from 2.0.0 or earlier) or unknown → Animated.
+	settings.statusBarPartner = parseStatusBarMode(savedSettings.statusBarPartner);
 	const caught = isRecord(raw.caught) ? ({ ...raw.caught } as Record<string, CaughtEntry>) : {};
 	const ledger = isRecord(raw.ledger) ? ({ ...raw.ledger } as Record<string, LedgerEntry>) : {};
 	const caughtTotal = Object.values(caught).reduce((n, c) => n + (typeof c?.count === 'number' ? c.count : 0), 0);
