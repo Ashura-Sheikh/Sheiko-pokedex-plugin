@@ -32,6 +32,16 @@ import {
 import { registerTestCommands } from './dev-tools';
 import { ALL_SPECIES, GEN_RANGES, speciesUpTo } from './gens';
 import { ANIM_MODE_LABELS, parseAnimMode } from './partner-anim';
+import {
+	STATUS_BAR_MODE_LABELS,
+	StatusMove,
+	effectiveStatusMode,
+	moveFor,
+	parseStatusBarMode,
+	rewardPartnerView,
+	whenToPlay,
+} from './statusbar-anim';
+import { StatusBarPartner } from './ui/statusbar-anim-ui';
 import { ConfirmModal } from './ui/confirm-modal';
 import {
 	EvolveUse,
@@ -47,7 +57,7 @@ import {
 } from './progression';
 import { Species, TradeItemKind } from './species';
 import { SHEIKO_ID, Watcher, sheikoEnabled } from './watcher';
-import { RewardInfo, RewardModal } from './ui/reward-modal';
+import { RewardInfo, RewardModal, RewardPartner } from './ui/reward-modal';
 import { PokedexView, VIEW_TYPE_POKEDEX } from './ui/pokedex-view';
 import { EvolveModal } from './ui/evolve-modal';
 import { EvolutionSceneModal } from './ui/evolution-scene-modal';
@@ -77,6 +87,8 @@ export default class SheikoPokedexPlugin extends Plugin {
 	private windowTimer: number | null = null;
 	private warnedNoSheiko = false;
 	private statusBar: HTMLElement | null = null;
+	/** Mini partner in the status bar (2.1.0, #53). */
+	private statusPartner: StatusBarPartner | null = null;
 	/** blob: URLs for the downloaded sprites; revoked when replaced or on unload. */
 	private spriteUrls: string[] = [];
 	/** True while "Download sprites" runs. */
@@ -125,6 +137,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		this.statusBar.setAttr('data-tooltip-position', 'top');
 		this.statusBar.addEventListener('click', () => this.onStatusBarClick());
 		this.statusBar.addEventListener('contextmenu', (e) => this.showStatusBarMenu(e));
+		this.statusPartner = new StatusBarPartner(this.statusBar);
 		this.updateStatusBar();
 
 		// Downloaded sprites, if the user fetched them earlier (DB). Badges until then.
@@ -158,6 +171,8 @@ export default class SheikoPokedexPlugin extends Plugin {
 
 	onunload(): void {
 		this.unloading = true;
+		this.statusPartner?.destroy();
+		this.statusPartner = null;
 		this.clearSpriteUrls();
 		this.watcher?.stop();
 		if (this.windowTimer !== null) window.clearInterval(this.windowTimer);
@@ -243,7 +258,33 @@ export default class SheikoPokedexPlugin extends Plugin {
 		return ` Found ${names.length === 1 ? `a ${names[0]!}` : `${names.length} Trade Items: ${names.join(', ')}`}!`;
 	}
 
+	/** The close's notice or reward window, then the status bar move (2.1.0, #53). */
 	private announce(decision: Decision, file: TFile): void {
+		this.announceClose(decision, file);
+		const move = moveFor(decision.kind);
+		// A catch with the reward window on plays when the window closes (see announceClose).
+		if (move && whenToPlay(move, this.data.settings.showRewardWindow) === 'now') this.playStatusMove(move);
+	}
+
+	/** Plays a status bar move, unless the setting, reduced motion or the cooldown says no. */
+	private playStatusMove(move: StatusMove): void {
+		if (this.unloading) return;
+		this.statusPartner?.play(move, effectiveStatusMode(this.data.settings.statusBarPartner, this.reducedMotion()));
+	}
+
+	private reducedMotion(): boolean {
+		return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	}
+
+	/** The partner for the reward window (2.1.0, #56), or null when none is shown. */
+	private rewardPartner(): RewardPartner | null {
+		const dex = this.data.partner;
+		const species = dex !== null ? speciesByDex(dex) : undefined;
+		const view = rewardPartnerView(!!species, this.data.settings.statusBarPartner, this.reducedMotion());
+		return species && view !== 'none' ? { species, view } : null;
+	}
+
+	private announceClose(decision: Decision, file: TFile): void {
 		switch (decision.kind) {
 			case 'already':
 				return;
@@ -280,7 +321,10 @@ export default class SheikoPokedexPlugin extends Plugin {
 					const stone = decision.stone ? ` Found a ${STONE_LABELS[decision.stone]}!` : '';
 					new Notice(`You caught ${decision.draw.species.name}! (${decision.draw.tier})${this.xpText(decision.xp)}${stone}${this.itemsText(decision.items)}`);
 				} else {
-					this.showWindow(() => new RewardModal(this.app, info, () => void this.openPokedex()).open());
+					const partner = this.rewardPartner();
+					this.showWindow(() =>
+						new RewardModal(this.app, info, () => void this.openPokedex(), partner, () => this.playStatusMove('catch')).open(),
+					);
 				}
 				this.maybeAskToEvolve(decision.xp);
 			}
@@ -544,7 +588,7 @@ export default class SheikoPokedexPlugin extends Plugin {
 		const dex = this.data.partner;
 		const p = dex !== null ? speciesByDex(dex) : undefined;
 		if (!p || dex === null) {
-			this.statusBar.setText('Pokedex: choose a partner');
+			this.statusPartner?.render('Pokedex: choose a partner', null);
 			const hasCaught = Object.keys(this.data.caught).length > 0;
 			this.statusBar.setAttr(
 				'aria-label',
@@ -553,7 +597,10 @@ export default class SheikoPokedexPlugin extends Plugin {
 			return;
 		}
 		const mon = this.data.mons[String(dex)] ?? { level: START_LEVEL, xp: 0 };
-		this.statusBar.setText(`${p.name} Lv ${mon.level}`);
+		// 2.1.0 (#54): the mini sprite unless the setting is Hidden. Updated in place, so a redraw
+		// during a move doesn't end it.
+		const mini = this.data.settings.statusBarPartner === 'hidden' ? null : p;
+		this.statusPartner?.render(`${p.name} Lv ${mon.level}`, mini);
 		const waiting = levelEvolutionAvailable(dex, mon, this.unlocked());
 		const evo = waiting ? ` · can evolve into ${waiting.name}` : '';
 		this.statusBar.setAttr(
@@ -602,6 +649,8 @@ export default class SheikoPokedexPlugin extends Plugin {
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.data);
 		this.refreshViews();
+		// The Status bar partner setting (2.1.0) shows or hides the mini sprite straight away.
+		this.updateStatusBar();
 	}
 
 	// --- Sprites (DB, Sheikh 2026-10-13). Off by default; downloaded only when the user asks. ---
@@ -746,6 +795,7 @@ type ControlKey =
 	| 'bulkWindowMinutes'
 	| 'calmEvolution'
 	| 'partnerAnimation'
+	| 'statusBarPartner'
 	| 'contextTypes'
 	| 'testTools';
 
@@ -789,6 +839,9 @@ class PokedexSettingTab extends PluginSettingTab {
 				break;
 			case 'partnerAnimation':
 				s.partnerAnimation = parseAnimMode(value);
+				break;
+			case 'statusBarPartner':
+				s.statusBarPartner = parseStatusBarMode(value);
 				break;
 			case 'testTools':
 				s.testTools = value === true;
@@ -856,6 +909,11 @@ class PokedexSettingTab extends PluginSettingTab {
 				name: 'Partner animation',
 				desc: "Hovering or tabbing to your partner's card in the Pokedex plays a short animation. Full adds movement and an effect for its type (flames for Fire, a splash for Water). Calm is a soft glow in its type colour. Calm is used instead of Full when your system asks for reduced motion.",
 				control: { type: 'dropdown', key: 'partnerAnimation', options: { ...ANIM_MODE_LABELS } },
+			},
+			{
+				name: 'Status bar partner',
+				desc: "Your partner as a small picture next to its name in the status bar. Animated: it hops when a closed task counts toward a catch, and hops higher with a few small dots when you catch a Pokémon (after you close the reward window). Still: shown without moving. Hidden: name and level only. Also sets your partner in the reward window: it hops there when Animated, stays still when Still, and isn't shown when Hidden. Still is used instead of Animated when your system asks for reduced motion.",
+				control: { type: 'dropdown', key: 'statusBarPartner', options: { ...STATUS_BAR_MODE_LABELS } },
 			},
 			this.spritesGroup(),
 			this.starterGroup(),
